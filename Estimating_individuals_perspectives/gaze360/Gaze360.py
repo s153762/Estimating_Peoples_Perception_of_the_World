@@ -16,10 +16,9 @@ class Gaze360:
         WIDTH, HEIGHT = 960, 720
         self.transforms_normalize = self._get_transform()
 
-
         # Model
         self.model = GazeLSTM()
-        # model.cuda()
+        # self.model.cuda()
         self.model = torch.nn.DataParallel(self.model)  # .cuda()
         checkpoint = torch.load(model_weights, map_location=lambda storage, loc: storage)
         self.model.load_state_dict(checkpoint['state_dict'])
@@ -39,47 +38,57 @@ class Gaze360:
         output[:, 1] = torch.sin(x[:, 1])
         return output
 
-    def getArrows(self, image, face_locations, printTime):
+    def makeArrows(self, head_box, gaze):
+        # TODO: Improve eye location
+        eyes = [(head_box[0] + head_box[2]) / 2.0, (0.65 * head_box[1] + 0.35 * head_box[3])]
+        eyes = np.asarray(eyes).astype(float)
+        # eyes[0], eyes[1] = eyes[0] / float(image.shape[1]), eyes[1] / float(image.shape[0])
+
+        # 2*eyes[0]-1, -2*eyes[1]+1
+        return patches.Arrow(eyes[0], eyes[1], -gaze[2] * 200, gaze[1] * 200, linewidth=2, edgecolor=(1, 0, 0),
+                                    facecolor='none')
+
+    def makeHeadboxes(self, head_box):
+        return patches.Rectangle((head_box[0], head_box[1]), head_box[2] - head_box[0], head_box[3] - head_box[1],
+                              linewidth=1, edgecolor=(0, 1, 1), facecolor='none')
+
+
+    def getHeadbox(self, image, face_locations):
+        count = 0
+        input_image = torch.zeros(len(face_locations), 7, 3, 224, 224)
+        head_boxs = []
+        for face_location in face_locations:
+            top, right, bottom, left = face_location
+            head_boxs.append([left, top, right, bottom])
+            head = image.crop((head_boxs[count]))  # head crop
+            input_image[count, 0, :, :, :] = self.transforms_normalize(head)
+            count += 1
+        return input_image, head_boxs
+
+    def getGaze(self, input_image, amount):
+        # forward pass
+        output_gaze, var = self.model(input_image.view(amount, 7, 3, 224, 224))  # .cuda())
+        gazes = self.spherical2cartesial(output_gaze).detach().numpy()
+        print("Var: ", var)
+        print("Gazes: ", gazes)
+        return gazes
+
+    def getArrows(self, image, face_locations, printTime, returnArrows):
         arrows = []
         heads = []
         starttime = None
         if printTime:
             starttime = time.time()
 
-        count = 0
-        input_image = torch.zeros(2, 7, 3, 224, 224)
-        head_boxs = []
-        for face_location in face_locations:
-            top, right, bottom, left = face_location
-            head_boxs.append([left, top, right, bottom])
-            head = image.crop((head_boxs[count]))  # head crop
-            print(head_boxs)
-            if count < 7:
-                input_image[count, 0, :, :, :] = self.transforms_normalize(head)
-                print(count)
-            count+=1
-
-        # forward pass
-        output_gaze, var = self.model(input_image.view(2, 7, 3, 224, 224))  # .cuda())
-        print("var", var)
-        gazes = self.spherical2cartesial(output_gaze).detach().numpy()
-        print("Gaze: ", gazes)
+        input_image, head_boxs = self.getHeadbox(image, face_locations)
+        gazes = self.getGaze(input_image, len(face_locations))
+        if not returnArrows:
+            return gazes
 
         for i in range(len(gazes)):
-            gaze = gazes[i]
-            print("Gaze: ", gaze)
-
-            # TODO: Improve eye location
-            eyes = [(head_boxs[i][0] + head_boxs[i][2]) / 2.0, (0.65 * head_boxs[i][1] + 0.35 * head_boxs[i][3])]
-            eyes = np.asarray(eyes).astype(float)
-            # eyes[0], eyes[1] = eyes[0] / float(image.shape[1]), eyes[1] / float(image.shape[0])
-
-            heads.append(patches.Rectangle((head_boxs[i][0], head_boxs[i][1]), head_boxs[i][2] - head_boxs[i][0], head_boxs[i][3] - head_boxs[i][1],
-                                     linewidth=1, edgecolor=(0, 1, 1), facecolor='none'))
-            # 2*eyes[0]-1, -2*eyes[1]+1
-
-            arrows.append(patches.Arrow(eyes[0], eyes[1], -gaze[2] * 200, gaze[1] * 200, linewidth=2, edgecolor=(1, 0, 0),
-                                  facecolor='none'))
+            head_box = head_boxs[i]
+            arrows.append(self.makeArrows(head_box, gazes[i]))
+            heads.append(self.makeHeadboxes(head_box))
 
         if printTime:
             print("Time taken to estimate gaze369: ", time.time() - starttime)
