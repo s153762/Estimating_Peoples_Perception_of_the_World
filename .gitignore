@@ -26,6 +26,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+Estimating_individuals_perspectives/.idea
 Estimating_individuals_perspectives/.idea/
 Estimating_individuals_perspectives/detecting_attended_targets/model_weights/
 

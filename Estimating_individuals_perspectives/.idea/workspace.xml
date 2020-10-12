@@ -1,14 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="92362fdf-3065-493c-bf6f-0d6036ac5745" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/Estimating_individuals_perspectives.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Estimating_individuals_perspectives.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Estimating_individuals_perspectives.py" beforeDir="false" afterPath="$PROJECT_DIR$/Estimating_individuals_perspectives.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/detecting_attended_targets/Detecting_attended_targets.py" beforeDir="false" afterPath="$PROJECT_DIR$/detecting_attended_targets/Detecting_attended_targets.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gaze360/Gaze360.py" beforeDir="false" afterPath="$PROJECT_DIR$/gaze360/Gaze360.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gaze360/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/gaze360/model.py" afterDir="false" />
-    </list>
+    <list default="true" id="92362fdf-3065-493c-bf6f-0d6036ac5745" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -119,7 +112,7 @@
       <option name="presentableId" value="Default" />
       <updated>1602151691500</updated>
       <workItem from="1602151698071" duration="8988000" />
-      <workItem from="1602165682073" duration="6153000" />
+      <workItem from="1602165682073" duration="6622000" />
     </task>
     <servers />
   </component>
@@ -144,6 +137,11 @@
           <url>file://$PROJECT_DIR$/gaze360/Gaze360.py</url>
           <line>13</line>
           <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/gaze360/Gaze360.py</url>
+          <line>59</line>
+          <option name="timeStamp" value="6" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
