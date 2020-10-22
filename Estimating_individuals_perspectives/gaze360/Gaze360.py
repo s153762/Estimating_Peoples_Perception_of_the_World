@@ -4,6 +4,7 @@ import torch
 import torchvision.transforms as transforms
 import numpy as np
 import matplotlib.patches as patches
+import math
 
 from gaze360.model import GazeLSTM
 
@@ -38,15 +39,39 @@ class Gaze360:
         output[:, 1] = torch.sin(x[:, 1])
         return output
 
-    def makeArrows(self, head_box, gaze):
+    def getEyes(self, head_box):
         # TODO: Improve eye location
-        eyes = [(head_box[0] + head_box[2]) / 2.0, (0.65 * head_box[1] + 0.35 * head_box[3])]
-        eyes = np.asarray(eyes).astype(float)
         # eyes[0], eyes[1] = eyes[0] / float(image.shape[1]), eyes[1] / float(image.shape[0])
-
         # 2*eyes[0]-1, -2*eyes[1]+1
-        return patches.Arrow(eyes[0], eyes[1], -gaze[2] * 200, gaze[1] * 200, linewidth=2, edgecolor=(1, 0, 0),
+        eyes = [(head_box[0] + head_box[2]) / 2.0, (0.65 * head_box[1] + 0.35 * head_box[3])]
+        return np.asarray(eyes).astype(float)
+
+
+    def makeArrows(self, head_box, gaze):
+        eyes = self.getEyes(head_box)
+        gaze = Gaze360.makeGaze2d(gaze)
+        return patches.Arrow(eyes[0], eyes[1], gaze[0], gaze[1], linewidth=2, edgecolor=(1, 0, 0),
                                     facecolor='none')
+
+    @staticmethod
+    def makeGaze2d(gaze):
+        gaze = [-gaze[0],gaze[1],-gaze[2]]
+        n = [0,0,1]
+        def length(v):
+            return math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
+
+        def dot_product(v, w):
+            return v[0] * w[0] + v[1] * w[1] + v[2] * w[2]
+
+        def times(v,n):
+            return [v[0]*n,v[1]*n,v[2]*n]
+
+        def minus(v,w):
+            return  [v[0]-w[0],v[1]-w[1],v[2]-w[2]]
+
+        proj = times(n,(dot_product(n,gaze) / (length(n) ** 2)))
+        test = minus(gaze,proj)
+        return times(test,100)[:-1]
 
     def makeHeadboxes(self, head_box):
         return patches.Rectangle((head_box[0], head_box[1]), head_box[2] - head_box[0], head_box[3] - head_box[1],
@@ -57,13 +82,15 @@ class Gaze360:
         count = 0
         input_image = torch.zeros(len(face_locations), 7, 3, 224, 224)
         head_boxs = []
+        eyes = []
         for face_location in face_locations:
             top, right, bottom, left = face_location
             head_boxs.append([left, top, right, bottom])
+            eyes.append(self.getEyes(head_boxs[count]))
             head = image.crop((head_boxs[count]))  # head crop
             input_image[count, 0, :, :, :] = self.transforms_normalize(head)
             count += 1
-        return input_image, head_boxs
+        return input_image, head_boxs, eyes
 
     def getGaze(self, input_image, amount):
         # forward pass
@@ -80,10 +107,10 @@ class Gaze360:
         if printTime:
             starttime = time.time()
 
-        input_image, head_boxs = self.getHeadbox(image, face_locations)
+        input_image, head_boxs, eyes = self.getHeadbox(image, face_locations)
         gazes = self.getGaze(input_image, len(face_locations))
         if not returnArrows:
-            return gazes
+            return gazes, eyes
 
         for i in range(len(gazes)):
             head_box = head_boxs[i]

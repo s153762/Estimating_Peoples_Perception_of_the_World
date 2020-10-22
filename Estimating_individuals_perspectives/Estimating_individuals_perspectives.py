@@ -8,6 +8,7 @@ import time
 
 from detecting_attended_targets.Detecting_attended_targets import DetectingAttendedTargets
 from gaze360.Gaze360 import Gaze360
+from combination_method import CombinationMethod
 
 class EstimatingIndividualsPerspective:
     def __init__(self):
@@ -27,25 +28,35 @@ class EstimatingIndividualsPerspective:
         ims.append(axs[1].imshow(image));
 
         while vc.isOpened():
-            for i in range(5):
+            for i in range(4):
                 image_raw, image = self.grab_frame(vc)
 
             if image is None:
                 break;
 
             face_locations = self.get_face_locations(image_raw, True)
-            heatmap, blended = self.plot_detecting_attended_targets(detectingAttendedTargets, image, face_locations)
-            ims[0].set_data(blended)
-            ims[1].set_data(heatmap)
+            if len(face_locations) > 0:
+                heatmap, blended = self.plot_detecting_attended_targets(detectingAttendedTargets, image, face_locations)
+                ims[0].set_data(blended)
+                ims[1].set_data(heatmap)
 
-            arrows, heads = self.plot_gaze360(gaze360, image, face_locations)
+                #arrows, heads = self.plot_gaze360(gaze360, image, face_locations)
+                gazes, eyes = self.plot_gaze360(gaze360, image, face_locations)
+                polygon = CombinationMethod.toHeatmap(image, gazes, eyes)
+                for ply in polygon:
+                    axs[0].add_patch(ply)
+                #for arrow in arrows+heads:
+                #    axs[0].add_patch(arrow)
 
-            for arrow in arrows+heads:
-                axs[0].add_patch(arrow)
-
-            plt.pause(0.0001)
-            for arrow in arrows+heads:
-                arrow.remove()
+                plt.pause(0.0001)
+                #for arrow in arrows+heads:
+                #    arrow.remove()
+                for ply in polygon:
+                    ply.remove()
+            else:
+                ims[0].set_data(image)
+                ims[1].set_data(Image.new('RGBA', image.size, (0, 0, 0, 255)))
+                plt.pause(0.0001)
 
 
         plt.ioff()
@@ -53,11 +64,11 @@ class EstimatingIndividualsPerspective:
 
     def plot_detecting_attended_targets(self, detectingAttendedTargets, image, face_locations):
         heatmap = detectingAttendedTargets.getHeatmap(image, face_locations, True)
-        return heatmap, Image.blend(image.convert("RGBA"), heatmap.convert("RGBA"), alpha=.5)
+        return Image.alpha_composite(Image.new('RGBA', image.size, (0, 0, 0, 255)), heatmap), Image.alpha_composite(image.convert("RGBA"), heatmap) #Image.blend(image.convert("RGBA"), heatmap, alpha=.5)
 
 
     def plot_gaze360(self, gaze360, image, face_locations):
-        arrows = gaze360.getArrows(image, face_locations, True)
+        arrows = gaze360.getArrows(image, face_locations, True, False)
         return arrows
 
 

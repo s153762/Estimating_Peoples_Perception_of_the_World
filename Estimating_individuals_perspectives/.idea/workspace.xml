@@ -2,7 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="92362fdf-3065-493c-bf6f-0d6036ac5745" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/combination_method.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Estimating_individuals_perspectives.py" beforeDir="false" afterPath="$PROJECT_DIR$/Estimating_individuals_perspectives.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/detecting_attended_targets/Detecting_attended_targets.py" beforeDir="false" afterPath="$PROJECT_DIR$/detecting_attended_targets/Detecting_attended_targets.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/gaze360/Gaze360.py" beforeDir="false" afterPath="$PROJECT_DIR$/gaze360/Gaze360.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -115,7 +118,7 @@
       <option name="presentableId" value="Default" />
       <updated>1602151691500</updated>
       <workItem from="1602151698071" duration="8988000" />
-      <workItem from="1602165682073" duration="8173000" />
+      <workItem from="1602165682073" duration="29199000" />
     </task>
     <servers />
   </component>
@@ -138,14 +141,21 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/gaze360/Gaze360.py</url>
-          <line>13</line>
+          <line>14</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
       </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Estimating_individuals_perspectives$Estimating_individuals_perspectives.coverage" NAME="Estimating_individuals_perspectives Coverage Results" MODIFIED="1602504999706" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Estimating_individuals_perspectives$Estimating_individuals_perspectives.coverage" NAME="Estimating_individuals_perspectives Coverage Results" MODIFIED="1602684070403" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/estimating_individuals_perspectives$Estimating_individuals_perspectives.coverage" NAME="Estimating_individuals_perspectives Coverage Results" MODIFIED="1602164867621" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

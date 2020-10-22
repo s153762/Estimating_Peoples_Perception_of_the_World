@@ -4,15 +4,18 @@ from torchvision import transforms
 import numpy as np
 from PIL import Image, ImageOps
 import cv2
+import random
 
 from detecting_attended_targets.model import ModelSpatial
 from detecting_attended_targets.utils import imutils, evaluation
 from detecting_attended_targets.config import *
 
+
 class DetectingAttendedTargets:
-    model_weights = None;
-    transforms_normalize = None;
-    model = None;
+    model_weights = None
+    transforms_normalize = None
+    model = None
+    colors = None
 
     def __init__(self, model_weights):
         print('Starting detecting attended targets')
@@ -30,6 +33,7 @@ class DetectingAttendedTargets:
         self.model.load_state_dict(model_dict)
         # self.model.cuda()
         self.model.train(False)
+        self.colors = []
 
     def _get_transform(self):
         transform_list = []
@@ -41,23 +45,37 @@ class DetectingAttendedTargets:
     def getHeatmap(self, image, face_locations, printTime):
         with torch.no_grad():
             width, height = image.size
-
-            first = True
-            heatmap = Image.new('RGBA', (width, height), (0, 0, 0, 225));
+            heatmap = Image.new('RGBA', (width, height), (0, 0, 0, 0));
             starttime = None;
 
             if printTime:
                 starttime = time.time()
 
+            count = 0
             for face_location in face_locations:
-                heatmap_new = self.getSingleHeatmap(image, face_location, width, height)
-                if first:
-                    first = False;
-                else:
-                    heatmap = Image.blend(heatmap, heatmap_new, alpha=.5)
+                heatmap_new = self.color_array(self.getSingleHeatmap(image, face_location, width, height), count)
+                heatmap = Image.alpha_composite(heatmap, heatmap_new)
+                count += 1
         if printTime:
             print("Time taken to estimate attended targets: ", time.time()-starttime)
-        return ImageOps.invert(heatmap.convert('RGB'));
+        return DetectingAttendedTargets.black_to_transparency(heatmap)#ImageOps.invert(heatmap.convert('RGB')));
+
+    @staticmethod
+    def black_to_transparency(img):
+        x = np.asarray(img).copy()
+        x[:, :, 3] = (255 * (x[:, :, :3] != 0).any(axis=2)).astype(np.uint8)
+        return Image.fromarray(x)
+
+
+    def color_array(self, img, i):
+        if self.colors == None:
+            self.colors = []
+        if len(self.colors) <= i:
+            self.colors.append((random.randint(0, 2), random.random()))
+        color = self.colors[i]
+        x = np.asarray(img).copy()
+        x[:, :, color[0]] = (color[1] * (x[:, :, :color[0]] != 0).any(axis=2)).astype(np.uint8)
+        return Image.fromarray(x)
 
     def getSingleHeatmap(self, image, face_location, width, height):
         top, right, bottom, left = face_location
