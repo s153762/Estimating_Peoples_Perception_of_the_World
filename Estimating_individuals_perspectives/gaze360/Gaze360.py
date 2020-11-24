@@ -5,6 +5,7 @@ import torchvision.transforms as transforms
 import numpy as np
 import matplotlib.patches as patches
 import math
+import face_recognition
 
 from gaze360.model import GazeLSTM
 
@@ -34,9 +35,11 @@ class Gaze360:
 
     def spherical2cartesial(self, x):
         output = torch.zeros(x.size(0), 3)
-        output[:, 2] = -torch.cos(x[:, 1]) * torch.cos(x[:, 0])
-        output[:, 0] = torch.cos(x[:, 1]) * torch.sin(x[:, 0])
-        output[:, 1] = torch.sin(x[:, 1])
+        polar_angle = x[:, 0]
+        azimuthal_angle = x[:, 1]
+        output[:, 1] = torch.cos(azimuthal_angle) * torch.sin(polar_angle)
+        output[:, 0] = torch.sin(azimuthal_angle)
+        output[:, 2] = -torch.cos(azimuthal_angle)*torch.cos(polar_angle)
         return output
 
     def getEyes(self, head_box):
@@ -46,16 +49,22 @@ class Gaze360:
         eyes = [(head_box[0] + head_box[2]) / 2.0, (0.65 * head_box[1] + 0.35 * head_box[3])]
         return np.asarray(eyes).astype(float)
 
+    def get_eyes(self, face_landmark):
+        right = np.mean(face_landmark["right_eye"], axis=0)
+        left = np.mean(face_landmark["left_eye"], axis=0)
+        eyes = left+(right-left)/2
+        return np.asarray(eyes).astype(float)
 
-    def makeArrows(self, head_box, gaze):
-        eyes = self.getEyes(head_box)
+
+    def makeArrows(self, head_box, gaze, min, max):
+        eyes = self.get_eyes(head_box)
         gaze = Gaze360.makeGaze2d(gaze)
         return patches.Arrow(eyes[0], eyes[1], gaze[0], gaze[1], linewidth=2, edgecolor=(1, 0, 0),
                                     facecolor='none')
 
     @staticmethod
     def makeGaze2d(gaze):
-        gaze = [-gaze[0],gaze[1],-gaze[2]]
+        gaze = [-gaze[0],gaze[1],gaze[2]]
         n = [0,0,1]
         def length(v):
             return math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
@@ -78,7 +87,7 @@ class Gaze360:
                               linewidth=1, edgecolor=(0, 1, 1), facecolor='none')
 
 
-    def getHeadbox(self, image, face_locations):
+    def getHeadbox(self, image, face_locations, face_landmarks):
         count = 0
         input_image = torch.zeros(len(face_locations), 7, 3, 224, 224)
         head_boxs = []
@@ -86,37 +95,54 @@ class Gaze360:
         for face_location in face_locations:
             top, right, bottom, left = face_location
             head_boxs.append([left, top, right, bottom])
-            eyes.append(self.getEyes(head_boxs[count]))
             head = image.crop((head_boxs[count]))  # head crop
             input_image[count, 0, :, :, :] = self.transforms_normalize(head)
             count += 1
+        for face_landmark in face_landmarks:
+            eyes.append(self.get_eyes(face_landmark))
+
         return input_image, head_boxs, eyes
 
     def getGaze(self, input_image, amount):
         # forward pass
         output_gaze, var = self.model(input_image.view(amount, 7, 3, 224, 224))  # .cuda())
+        #var = var.detach().numpy()
         gazes = self.spherical2cartesial(output_gaze).detach().numpy()
+        gazes_min = self.spherical2cartesial(output_gaze-var).detach().numpy()
+        gazes_max = self.spherical2cartesial(output_gaze+var).detach().numpy()
         print("Var: ", var)
-        print("Gazes: ", gazes)
-        return gazes
+        print("Gazes: ", gazes, gazes_min, gazes_max)
+        return gazes, gazes_min, gazes_max
 
-    def getArrows(self, image, face_locations, printTime, returnArrows):
+    def getArrows(self, image, face_locations, face_landmarks, printTime, returnArrows):
         arrows = []
         heads = []
         starttime = None
         if printTime:
             starttime = time.time()
 
-        input_image, head_boxs, eyes = self.getHeadbox(image, face_locations)
-        gazes = self.getGaze(input_image, len(face_locations))
+        input_image, head_boxs, eyes = self.getHeadbox(image, face_locations, face_landmarks)
+        gazes, min, max = self.getGaze(input_image, len(face_locations))
         if not returnArrows:
-            return gazes, eyes
+            return gazes, eyes, min, max
 
         for i in range(len(gazes)):
             head_box = head_boxs[i]
-            arrows.append(self.makeArrows(head_box, gazes[i]))
+            arrows.append(self.makeArrows(head_box, gazes[i], min, max))
             heads.append(self.makeHeadboxes(head_box))
 
         if printTime:
             print("Time taken to estimate gaze369: ", time.time() - starttime)
         return arrows, heads
+
+    @staticmethod
+    def getEyeLocalization(image):
+        eye_localizations = []
+        face_landmarks_list = face_recognition.face_landmarks(image)
+        for face_landmarks in face_landmarks_list:
+            eye_localizations.append(Gaze360.midpointTwoCoordinates(face_landmarks['left_eye'], face_landmarks['right_eye']))
+        return eye_localizations
+
+    @staticmethod
+    def midpointTwoCoordinates(p1, p2):
+        return [(p1[0]+p2[0])/2, (p1[1]+p2[1])/2]
