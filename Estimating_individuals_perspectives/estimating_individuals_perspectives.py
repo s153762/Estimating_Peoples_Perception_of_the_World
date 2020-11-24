@@ -46,16 +46,17 @@ class EstimatingIndividualsPerspective:
                 ims[1].set_data(blended)
                 ims[0].set_data(image)
 
-                #arrows, heads = self.plot_gaze360(gaze360, image, face_locations)
                 gazes, eyes, min, max = self.plot_gaze360(gaze360, image, face_locations, face_landmarks)
-                polygons, mask = GazeToFieldOfVision.toHeatmap(image, gazes, eyes, min, max)
+                polygons, prob_image = GazeToFieldOfVision.toHeatmap(image, gazes, eyes, min, max)
                 #heatmap_array = np.array(Image.alpha_composite(black_image, heatmap))
                 #mask_array = np.array(mask)
                 #result = cv2.bitwise_and(heatmap_array, mask_array)
                 #ims[1].set_data(mask_array)
-                ims[1].set_data(mask)
-                heatmapGaze = Image.alpha_composite(image.convert("RGBA"), mask.convert("RGBA"))
+                heatmapGaze = image.convert("RGBA")
+                for image in prob_image:
+                    heatmapGaze = Image.alpha_composite(heatmapGaze, image.convert("RGBA"))
                 ims[0].set_data(heatmapGaze)
+
                 for ply in polygons:
                     axs[0].add_patch(ply)
 

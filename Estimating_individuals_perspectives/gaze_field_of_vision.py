@@ -70,37 +70,37 @@ class GazeToFieldOfVision():
     @staticmethod
     def toHeatmap(image, gazes, eyes, gazes_min, gazes_max):
         objects = []
-        probability = []
+        probability_images = []
         for i in range(len(gazes)):
             gaze = gazes[i]
             eye = eyes[i]
             min = gazes_min[i]
             max = gazes_max[i]
             gaze_vektor = Gaze360.makeGaze2d(gaze)
-            xy = [(eye[0], eye[1])]
 
             rotate1 = Gaze360.makeGaze2d(min)#GazeToFieldOfVision.rotate(60 * var[i, 0], gaze_vektor)
             rotate2 = Gaze360.makeGaze2d(max)#GazeToFieldOfVision.rotate(-60 * var[i, 0], gaze_vektor)
-            long1 = GazeToFieldOfVision.getDiviation(image, eye, rotate1)
-            long2 = GazeToFieldOfVision.getDiviation(image, eye, rotate2)
-            v1 = (eye[0] + rotate1[0] * long1, eye[1] + rotate1[1] * long1)
-            v2 = (eye[0] + rotate2[0] * long2, eye[1] + rotate2[1] * long2)
 
-            above = patches.Arrow(eye[0], eye[1], rotate1[0], rotate1[1], linewidth=1, edgecolor=(1, 0.5, 0),
-                                  facecolor='none')
-            real = patches.Arrow(eye[0], eye[1], gaze_vektor[0], gaze_vektor[1], linewidth=1, edgecolor=(1, 0, 0),
-                                 facecolor='none')
-            below = patches.Arrow(eye[0], eye[1], rotate2[0], rotate2[1], linewidth=1, edgecolor=(1, 0, 1),
-                                  facecolor='none')
-
-            xy.append(v1)
-            xy += GazeToFieldOfVision.getAdditionalCorners(rotate1, image)
-            xy += GazeToFieldOfVision.getAdditionalCorners(gaze_vektor, image)
-            xy += GazeToFieldOfVision.getAdditionalCorners(rotate2, image)
-            xy.append(v2)
-            xy.append((eye[0], eye[1]))
-            poly = patches.Polygon(xy, closed=True, color="b", alpha=0.1)
+            above = patches.Arrow(eye[0], eye[1], rotate1[0], rotate1[1], linewidth=1, edgecolor=(1, 0.5, 0), facecolor='none')
+            real = patches.Arrow(eye[0], eye[1], gaze_vektor[0], gaze_vektor[1], linewidth=1, edgecolor=(1, 0, 0), facecolor='none')
+            below = patches.Arrow(eye[0], eye[1], rotate2[0], rotate2[1], linewidth=1, edgecolor=(1, 0, 1), facecolor='none')
             map = GazeToFieldOfVision.get_probability_map(image.size, eye, gaze_vektor, rotate1, rotate2)
+
+            # Poly
+            #xy = [(eye[0], eye[1])]
+            #long1 = GazeToFieldOfVision.getDiviation(image, eye, rotate1)
+            #v1 = (eye[0] + rotate1[0] * long1, eye[1] + rotate1[1] * long1)
+            #xy.append(v1)
+            #xy += GazeToFieldOfVision.getAdditionalCorners(rotate1, image)
+            #xy += GazeToFieldOfVision.getAdditionalCorners(gaze_vektor, image)
+            #xy += GazeToFieldOfVision.getAdditionalCorners(rotate2, image)
+            #long2 = GazeToFieldOfVision.getDiviation(image, eye, rotate2)
+            #v2 = (eye[0] + rotate2[0] * long2, eye[1] + rotate2[1] * long2)
+            #xy.append(v2)
+            #xy.append((eye[0], eye[1]))
+            #poly = patches.Polygon(xy, closed=True, color="b", alpha=0.1)
+
+            # mask using poly
             #mask = GazeToFieldOfVision.get_mask(image.size, xy)
             #mask_real = GazeToFieldOfVision.get_mask(image.size, [(eye[0], eye[1]), (eye[0] + gaze[0] * long1, eye[1] + gaze[1] * long1)])
             #indices = np.where(mask_real)
@@ -110,9 +110,10 @@ class GazeToFieldOfVision():
             #for i, x in enumerate(mask):
             #    distance_real = distance_real + [(i,j) for j, y in enumerate(x) if y]
             #mask = mask + mask_real
-            objects += [above, real, below, poly]
-            heatmap = Image.fromarray(map)
-            return objects, heatmap
+            objects += [above, real, below]#, poly]
+            probability_images += [Image.fromarray(map)]
+
+        return objects, probability_images
 
     def getArray(self, width, height, poly_verts):
         nx, ny = width, height
@@ -144,22 +145,19 @@ class GazeToFieldOfVision():
         #return np.meshgrid(*(np.arange(s) for s in shape), indexing='ij')
 
     @staticmethod
-    def get_probability(eye, unit_gaze, unit_gaze_min, unit_gaze_max, angle_gazemin, angle_gazemax, coordinate, a,b):
+    def get_probability(eye, unit_gaze, coordinate, a,b):
         # get vector to coordinate
         v = [coordinate[0]-eye[0], (coordinate[1]-eye[1])]
+
         # get angle to gaze
         unit_v = v / np.linalg.norm(v)
         angle_gaze = np.arccos(np.dot(unit_gaze, unit_v))
-        angle_min = np.arccos(np.dot(unit_gaze_min, unit_v))
-        angle_max = np.arccos(np.dot(unit_gaze_max, unit_v))
-        angle = min(angle_gaze, angle_min, angle_max)
+
         # probability
-        prob = a*angle_gaze+b
-        if angle == angle_gaze:
-            return [0,0,255, 20]
-        if angle_gaze > angle_gazemin*1.5 or angle_gaze > angle_gazemax*1.5:
-            return [255,0,0, 20]
-        return [0,255,0, 20]
+        prob = int(a*angle_gaze + b)
+        if prob < 0:
+            prob = 0
+        return [prob,prob,prob, prob]
 
     @staticmethod
     def get_probability_map(shape, eye, gaze, gaze_min, gaze_max):
@@ -170,17 +168,18 @@ class GazeToFieldOfVision():
         gaze_min = GazeToFieldOfVision.swap(gaze_min)
         gaze_max = GazeToFieldOfVision.swap(gaze_max)
 
-        #map = GazeToFieldOfVision.coordinates(shape);
+        #coordinate_map = GazeToFieldOfVision.coordinates(shape);
         probability_map = np.zeros(shape, dtype=np.uint8)
         unit_gaze = gaze / np.linalg.norm(gaze)
         unit_gaze_min = gaze_min / np.linalg.norm(gaze_min)
-        unit_gaze_max = gaze_max / np.linalg.norm(gaze_max)
         angle_gazemin = np.arccos(np.dot(unit_gaze_min, unit_gaze))
+        unit_gaze_max = gaze_max / np.linalg.norm(gaze_max)
         angle_gazemax = np.arccos(np.dot(unit_gaze_max, unit_gaze))
-        a,b = GazeToFieldOfVision.get_linear_function_params(0,angle_gazemin, 255, (255/100)*10)
-        for i in range(shape[0]):
-            for j in range(shape[1]):
-                probability_map[i,j] = GazeToFieldOfVision.get_probability(eye, unit_gaze, unit_gaze_min, unit_gaze_max, angle_gazemin, angle_gazemax, (i,j), a,b)
+        a,b = GazeToFieldOfVision.get_linear_function_params(0,(angle_gazemin+angle_gazemax)/2, 255, (255/100)*20)
+
+        for i in range(0, shape[0], 2):
+            for j in range(0, shape[1], 2):
+                probability_map[i,j] = GazeToFieldOfVision.get_probability(eye, unit_gaze, (i,j), a,b)
 
         #probability_map = np.swapaxes(probability_map, 1, 0)
         return probability_map
