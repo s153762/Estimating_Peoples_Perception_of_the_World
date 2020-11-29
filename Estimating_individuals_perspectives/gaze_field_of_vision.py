@@ -45,7 +45,7 @@ class GazeToFieldOfVision():
         return xy
 
     @staticmethod
-    def angle(B):
+    def angle(B, A = [1,0], get_clockwise = False):
         def length(v):
             return math.sqrt(v[0] ** 2 + v[1] ** 2)
 
@@ -59,13 +59,12 @@ class GazeToFieldOfVision():
             cosx = dot_product(v, w) / (length(v) * length(w))
             return math.acos(cosx)  # in radians
 
-        A = [1,0]
         inner = inner_angle(A, B)
         det = determinant(A, B)
-        if det < 0:  # this is a property of the det. If the det < 0 then B is clockwise of A
+        if det < 0 or not get_clockwise:  # this is a property of the det. If the det < 0 then B is clockwise of A
             return inner
         else:  # if the det > 0 then A is immediately clockwise of B
-            return math.pi*2 - inner
+            return - inner #math.pi*2 - inner
 
     @staticmethod
     def toHeatmap(image, gazes, eyes, gazes_min, gazes_max):
@@ -145,41 +144,51 @@ class GazeToFieldOfVision():
         #return np.meshgrid(*(np.arange(s) for s in shape), indexing='ij')
 
     @staticmethod
-    def get_probability(eye, unit_gaze, coordinate, a,b):
+    def get_probability(eye, gaze, coordinate, a,b):
         # get vector to coordinate
         v = [coordinate[0]-eye[0], (coordinate[1]-eye[1])]
 
         # get angle to gaze
-        unit_v = v / np.linalg.norm(v)
-        angle_gaze = np.arccos(np.dot(unit_gaze, unit_v))
+        angle_gaze = GazeToFieldOfVision.angle(v,gaze)
 
         # probability
         prob = int(a*angle_gaze + b)
         if prob < 0:
             prob = 0
-        return [prob,prob,prob, prob]
+        if prob > 255:
+            prob = 255
+        return [prob,prob,prob,prob]
 
     @staticmethod
     def get_probability_map(shape, eye, gaze, gaze_min, gaze_max):
         shape = GazeToFieldOfVision.swap(shape)
-        shape.append(4)
+
         eye = GazeToFieldOfVision.swap(eye)
         gaze = GazeToFieldOfVision.swap(gaze)
         gaze_min = GazeToFieldOfVision.swap(gaze_min)
         gaze_max = GazeToFieldOfVision.swap(gaze_max)
 
-        #coordinate_map = GazeToFieldOfVision.coordinates(shape);
-        probability_map = np.zeros(shape, dtype=np.uint8)
-        unit_gaze = gaze / np.linalg.norm(gaze)
-        unit_gaze_min = gaze_min / np.linalg.norm(gaze_min)
-        angle_gazemin = np.arccos(np.dot(unit_gaze_min, unit_gaze))
-        unit_gaze_max = gaze_max / np.linalg.norm(gaze_max)
-        angle_gazemax = np.arccos(np.dot(unit_gaze_max, unit_gaze))
-        a,b = GazeToFieldOfVision.get_linear_function_params(0,(angle_gazemin+angle_gazemax)/2, 255, (255/100)*20)
+        # broadcasting solution
+        coordinate_map = GazeToFieldOfVision.coordinates(shape);
+        coordinate_map[:, :, 0] = coordinate_map[:, :, 0] - eye[0] # get vector to coordinate
+        coordinate_map[:, :, 1] = coordinate_map[:, :, 1] - eye[1] # get vector to coordinate
+        map = GazeToFieldOfVision.angle_matrix(gaze, coordinate_map)
 
-        for i in range(0, shape[0], 2):
-            for j in range(0, shape[1], 2):
-                probability_map[i,j] = GazeToFieldOfVision.get_probability(eye, unit_gaze, (i,j), a,b)
+        angle_gaze_min = GazeToFieldOfVision.angle(gaze_min, gaze) #np.arccos(np.dot(unit_gaze_min, unit_gaze))
+        angle_gaze_max = GazeToFieldOfVision.angle(gaze_max, gaze) #np.arccos(np.dot(unit_gaze_max, unit_gaze))
+        a,b = GazeToFieldOfVision.get_linear_function_params(0,max(angle_gaze_min,angle_gaze_max), 255, (255/100)*20)
+        map = map*a+b;
+        map[map < 0] = 0
+        map[map > 255] = 255
+        probability_map = np.array([map]*4, dtype=np.uint8);
+        return probability_map.transpose((1,2,0))
+
+        # loop solution
+        shape.append(4)
+        probability_map = np.zeros(shape, dtype=np.uint8)
+        for i in range(0, shape[0], 1):
+            for j in range(0, shape[1], 1):
+                probability_map[i,j] = GazeToFieldOfVision.get_probability(eye, gaze, (i,j), a,b)
 
         #probability_map = np.swapaxes(probability_map, 1, 0)
         return probability_map
@@ -193,3 +202,30 @@ class GazeToFieldOfVision():
         a = (y2-y1)/(x2-x1)
         b = y1 - (a*x1)
         return a,b
+
+    @staticmethod
+    def angle_matrix(A, B_matrix, get_clockwise=False):
+        def length(v):
+            return math.sqrt(v[0] ** 2 + v[1] ** 2)
+
+        def length_matrix(v):
+            temp = v[:,:,0] ** 2 + v[:,:,1] ** 2
+            return np.sqrt(temp)
+
+        def dot_product(v, w):
+            return v[0] * w[:,:,0] + v[1] * w[:,:,1]
+
+        def determinant(v, w):
+            return v[0] * w[:,:,1] - v[1] * w[:,:,0]
+
+        def inner_angle(v, w):
+            cosx = dot_product(v, w) / (length(v) * length_matrix(w))
+            return np.arccos(cosx)  # in radians
+
+        inner = inner_angle(A, B_matrix)
+        if not get_clockwise:
+            return inner;
+        det = determinant(A, B_matrix)
+        det = np.array(det > 0, dtype=bool) # if the det > 0 then A is immediately clockwise of B and the det <= 0 then B is clockwise of A
+        inner[det] = -inner[det]
+        return inner

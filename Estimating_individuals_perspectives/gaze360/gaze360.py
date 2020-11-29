@@ -12,11 +12,14 @@ from gaze360.model import GazeLSTM
 class Gaze360:
     model = None;
     transforms_normalize = None
+    input_images = None
+    image_count = 0
 
     def __init__(self, model_weights):
         print('Starting Gaze360')
         WIDTH, HEIGHT = 960, 720
         self.transforms_normalize = self._get_transform()
+        self.input_images = torch.zeros(3, 7, 3, 224, 224)
 
         # Model
         self.model = GazeLSTM()
@@ -89,23 +92,27 @@ class Gaze360:
 
     def getHeadbox(self, image, face_locations, face_landmarks):
         count = 0
-        input_image = torch.zeros(len(face_locations), 7, 3, 224, 224)
+        input_image = torch.zeros(len(face_locations), 7, 3, 224, 224) #self.input_images[:len(face_locations), :,:,:,:]
         head_boxs = []
         eyes = []
+
         for face_location in face_locations:
             top, right, bottom, left = face_location
             head_boxs.append([left, top, right, bottom])
             head = image.crop((head_boxs[count]))  # head crop
-            input_image[count, 0, :, :, :] = self.transforms_normalize(head)
+            input_image[count, self.image_count, :, :, :] = self.transforms_normalize(head)
+            self.input_images[count, self.image_count, :, :, :] = input_image[count, self.image_count, :, :, :]
             count += 1
         for face_landmark in face_landmarks:
             eyes.append(self.get_eyes(face_landmark))
 
+        self.image_count = (self.image_count + 1) % 7
         return input_image, head_boxs, eyes
 
     def getGaze(self, input_image, amount):
         # forward pass
-        output_gaze, var = self.model(input_image.view(amount, 7, 3, 224, 224))  # .cuda())
+        input = input_image.view(amount, 7, 3, 224, 224)
+        output_gaze, var = self.model(input)  # .cuda())
         #var = var.detach().numpy()
         gazes = self.spherical2cartesial(output_gaze).detach().numpy()
         gazes_min = self.spherical2cartesial(output_gaze-var).detach().numpy()

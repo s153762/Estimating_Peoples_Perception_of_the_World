@@ -22,7 +22,7 @@ class EstimatingIndividualsPerspective:
         axs = self.setup_plot(2)
         plt.ion()
 
-        vc = cv2.VideoCapture('../../TrainingSet/test.mp4');#TwoPersons.m4v');#
+        vc = cv2.VideoCapture('../../TrainingSet/TwoPersons.m4v');#TwoPersons.m4v');#
         image_raw, image = self.grab_frame(vc)
         ims = []
         ims.append(axs[0].imshow(image));
