@@ -52,11 +52,7 @@ class Gaze360:
         eyes = [(head_box[0] + head_box[2]) / 2.0, (0.65 * head_box[1] + 0.35 * head_box[3])]
         return np.asarray(eyes).astype(float)
 
-    def get_eyes(self, face_landmark):
-        right = np.mean(face_landmark["right_eye"], axis=0)
-        left = np.mean(face_landmark["left_eye"], axis=0)
-        eyes = left+(right-left)/2
-        return np.asarray(eyes).astype(float)
+
 
 
     def makeArrows(self, head_box, gaze, min, max):
@@ -121,7 +117,7 @@ class Gaze360:
         print("Gazes: ", gazes, gazes_min, gazes_max)
         return gazes, gazes_min, gazes_max
 
-    def getArrows(self, image, face_locations, face_landmarks, printTime, returnArrows):
+    def get_gaze_direction(self, image, face_locations, face_landmarks, printTime, returnArrows):
         arrows = []
         heads = []
         starttime = None
