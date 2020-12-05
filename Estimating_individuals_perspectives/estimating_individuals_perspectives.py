@@ -18,7 +18,7 @@ class EstimatingIndividualsPerspective:
         # initialize
         print("Starting estimating individual's perspectives")
         self.use_webcam = False
-        self.use_detectron2 = True
+        self.use_detectron2 = False
         if self.use_detectron2:
             self.detectron2 = Detectron2Keypoints()
 
@@ -71,8 +71,8 @@ class EstimatingIndividualsPerspective:
                 heatmaps, blended = self.plot_detecting_attended_targets(self.detectingAttendedTargets, image, face_locations)
                 ims[1].set_data(blended)
 
-                gazes, eyes, min, max = self.plot_gaze360(self.gaze360, image, face_locations, face_landmarks)
-                polygons, prob_image = GazeToFieldOfVision.toHeatmap(image, gazes, eyes, min, max)
+                gazes, min, max = self.plot_gaze360(self.gaze360, image, face_locations)
+                polygons, prob_image = GazeToFieldOfVision.toHeatmap(image, gazes, face_landmarks, min, max)
                 #heatmap_array = np.array(Image.alpha_composite(black_image, heatmap))
                 #mask_array = np.array(mask)
                 #result = cv2.bitwise_and(heatmap_array, mask_array)
@@ -116,8 +116,8 @@ class EstimatingIndividualsPerspective:
         return heatmaps, Image.alpha_composite(image.convert("RGBA"), heatmaps)#Image.alpha_composite(Image.new('RGBA', image.size, (0, 0, 0, 0)), heatmap), Image.alpha_composite(image.convert("RGBA"), heatmap) #Image.blend(image.convert("RGBA"), heatmap, alpha=.5)
 
 
-    def plot_gaze360(self, gaze360, image, face_locations, face_landmarks):
-        return gaze360.get_gaze_direction(image, face_locations, face_landmarks, True, False)
+    def plot_gaze360(self, gaze360, image, face_locations):
+        return gaze360.get_gaze_direction(image, face_locations, True)
 
 
     def grab_frame(self, vc):
@@ -141,11 +141,13 @@ class EstimatingIndividualsPerspective:
         return face_locations, None
 
     @staticmethod
-    def get_eyes(face_landmark):
-        right = np.mean(face_landmark["right_eye"], axis=0)
-        left = np.mean(face_landmark["left_eye"], axis=0)
-        eyes = left+(right-left)/2
-        return np.asarray(eyes).astype(float)
+    def get_eyes(face_landmarks):
+        eyes = []
+        for landmarks in face_landmarks:
+            right = np.mean(landmarks["right_eye"], axis=0)
+            left = np.mean(landmarks["left_eye"], axis=0)
+            eyes.append(np.asarray(left+(right-left)/2).astype(float))
+        return np.array(eyes)
 
     def setup_plot(self, number_of_axis, titles = ["Gaze360","DAVTV"]):
         fig = plt.figure(figsize=(18, 6))

@@ -58,7 +58,6 @@ class GazeToFieldOfVision():
     @staticmethod
     def coordinates(shape):
         return np.indices(shape).transpose((1,2,0))
-        #return np.meshgrid(*(np.arange(s) for s in shape), indexing='ij')
 
 
     @staticmethod
