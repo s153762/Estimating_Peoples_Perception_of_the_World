@@ -180,7 +180,11 @@ class GazeToFieldOfVision():
         map = map*a+b;
         map[map < 0] = 0
         map[map > 255] = 255
-        probability_map = np.array([map]*4, dtype=np.uint8);
+        probability_map = np.empty(shape, dtype=np.uint8)
+        probability_map.fill(255)
+        probability_map = np.array([probability_map]*4, dtype=np.uint8);
+        probability_map[3] = map
+        #probability_map = np.array([map], dtype=np.uint8);
         return probability_map.transpose((1,2,0))
 
         # loop solution

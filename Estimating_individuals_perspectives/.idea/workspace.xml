@@ -2,10 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="92362fdf-3065-493c-bf6f-0d6036ac5745" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/estimating_individuals_perspectives.py" beforeDir="false" afterPath="$PROJECT_DIR$/estimating_individuals_perspectives.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gaze360/gaze360.py" beforeDir="false" afterPath="$PROJECT_DIR$/gaze360/gaze360.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gaze_field_of_vision.py" beforeDir="false" afterPath="$PROJECT_DIR$/gaze_field_of_vision.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/detectron/DensePose/model_final_162be9.pkl" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -35,7 +32,7 @@
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/detectron" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.path.for.package.eslint" value="project" />
@@ -56,10 +53,13 @@
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/detectron/DensePose" />
+      <recent name="$PROJECT_DIR$/detectron" />
       <recent name="$PROJECT_DIR$/gaze360" />
       <recent name="$PROJECT_DIR$/detecting_attended_targets" />
     </key>
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/detectron" />
       <recent name="$PROJECT_DIR$/gaze360" />
       <recent name="$PROJECT_DIR$/detecting_attended_targets/model_weights" />
       <recent name="$PROJECT_DIR$/detecting_attended_targets" />
@@ -77,8 +77,8 @@
       </list>
     </option>
   </component>
-  <component name="RunManager">
-    <configuration name="Estimating_individuals_perspectives" type="PythonConfigurationType" factoryName="Python" temporary="true">
+  <component name="RunManager" selected="Python.Estimating_individuals_perspectives">
+    <configuration name="Estimating_individuals_perspectives" type="PythonConfigurationType" factoryName="Python">
       <module name="Estimating_individuals_perspectives" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -100,9 +100,35 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="apply_net" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="Estimating_individuals_perspectives" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/detectron/DensePose" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/detectron/DensePose/apply_net.py" />
+      <option name="PARAMETERS" value="show configs/densepose_rcnn_R_50_FPN_s1x.yaml model_final_162be9.pkl ../../../../TrainingSet/testImage.png dp_contour,bbox --output image_densepose_contour.png" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Python.Estimating_individuals_perspectives" />
+      <item itemvalue="Python.apply_net" />
+    </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.Estimating_individuals_perspectives" />
+        <item itemvalue="Python.apply_net" />
       </list>
     </recent_temporary>
   </component>
@@ -123,7 +149,7 @@
       <workItem from="1603784123860" duration="227000" />
       <workItem from="1603784353415" duration="2383000" />
       <workItem from="1605002046326" duration="4315000" />
-      <workItem from="1605260728520" duration="39105000" />
+      <workItem from="1605260728520" duration="72931000" />
     </task>
     <servers />
   </component>
@@ -151,6 +177,31 @@
           <line>17</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/estimating_individuals_perspectives.py</url>
+          <line>100</line>
+          <option name="timeStamp" value="128" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/detectron/DensePose/apply_net.py</url>
+          <line>76</line>
+          <option name="timeStamp" value="143" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/detectron/DensePose/apply_net.py</url>
+          <line>309</line>
+          <option name="timeStamp" value="144" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/detectron/DensePose/apply_net.py</url>
+          <line>315</line>
+          <option name="timeStamp" value="146" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/estimating_individuals_perspectives.py</url>
+          <line>129</line>
+          <option name="timeStamp" value="169" />
+        </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
@@ -162,7 +213,8 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Estimating_individuals_perspectives$Estimating_individuals_perspectives.coverage" NAME="Estimating_individuals_perspectives Coverage Results" MODIFIED="1606484322093" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Estimating_individuals_perspectives$Estimating_individuals_perspectives.coverage" NAME="Estimating_individuals_perspectives Coverage Results" MODIFIED="1607175496745" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/estimating_individuals_perspectives$Estimating_individuals_perspectives.coverage" NAME="Estimating_individuals_perspectives Coverage Results" MODIFIED="1602164867621" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Estimating_individuals_perspectives$apply_net.coverage" NAME="apply_net Coverage Results" MODIFIED="1607090334670" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/detectron/DensePose" />
   </component>
 </project>

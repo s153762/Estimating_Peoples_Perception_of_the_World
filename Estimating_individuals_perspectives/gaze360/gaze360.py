@@ -5,7 +5,7 @@ import torchvision.transforms as transforms
 import numpy as np
 import matplotlib.patches as patches
 import math
-import face_recognition
+#import face_recognition
 
 from gaze360.model import GazeLSTM
 
@@ -94,7 +94,7 @@ class Gaze360:
         count = 0
         input_image = torch.zeros(len(face_locations), 7, 3, 224, 224) #self.input_images[:len(face_locations), :,:,:,:]
         head_boxs = []
-        eyes = []
+        #eyes = []
 
         for face_location in face_locations:
             top, right, bottom, left = face_location
@@ -103,11 +103,11 @@ class Gaze360:
             input_image[count, self.image_count, :, :, :] = self.transforms_normalize(head)
             self.input_images[count, self.image_count, :, :, :] = input_image[count, self.image_count, :, :, :]
             count += 1
-        for face_landmark in face_landmarks:
-            eyes.append(self.get_eyes(face_landmark))
+        #for face_landmark in face_landmarks:
+        #    eyes.append(self.get_eyes(face_landmark))
 
         self.image_count = (self.image_count + 1) % 7
-        return input_image, head_boxs, eyes
+        return input_image, head_boxs, face_landmarks
 
     def getGaze(self, input_image, amount):
         # forward pass

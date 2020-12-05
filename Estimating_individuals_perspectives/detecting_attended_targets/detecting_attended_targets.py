@@ -42,7 +42,8 @@ class DetectingAttendedTargets:
         transform_list.append(transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]))
         return transforms.Compose(transform_list)
 
-    def getHeatmap(self, image, face_locations, printTime):
+    def getHeatmap(self, image, face_locations, printTime, multiple=True):
+        heatmaps = []
         with torch.no_grad():
             width, height = image.size
             heatmap = Image.new('RGBA', (width, height), (0, 0, 0, 0));
@@ -54,10 +55,13 @@ class DetectingAttendedTargets:
             count = 0
             for face_location in face_locations:
                 heatmap_new = self.color_array(self.getSingleHeatmap(image, face_location, width, height), count)
+                heatmaps.append(DetectingAttendedTargets.black_to_transparency(heatmap_new))
                 heatmap = Image.alpha_composite(heatmap, heatmap_new)
                 count += 1
         if printTime:
             print("Time taken to estimate attended targets: ", time.time()-starttime)
+        if multiple:
+            return heatmaps
         return DetectingAttendedTargets.black_to_transparency(heatmap)#ImageOps.invert(heatmap.convert('RGB')));
 
     @staticmethod
@@ -79,7 +83,7 @@ class DetectingAttendedTargets:
 
     def getSingleHeatmap(self, image, face_location, width, height):
         top, right, bottom, left = face_location
-        head_box = [left - 30, top - 45, right + 30, bottom + 45]
+        head_box = [left, top, right, bottom]#[left - 30, top - 45, right + 30, bottom + 45]
         head = image.crop((head_box))  # head crop
 
         head = self.transforms_normalize(head)  # transform inputs
