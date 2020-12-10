@@ -7,6 +7,20 @@ from gaze360.gaze360 import Gaze360
 
 class GazeToFieldOfVision():
 
+    def __init__(self, target):
+        # left, top, right, bottom
+        self.target = target
+
+    def set_target(self, target):
+        # left, top, right, bottom
+        self.target = target
+
+    def get_probabilities(self, prob_images):
+        probs = np.array([np.asarray(image) for image in prob_images])
+        targets = probs[:,self.target[0]:self.target[2], self.target[1]:self.target[3],3]
+        mean = np.mean(targets,axis=(1,2))
+        return mean/255*100
+
     @staticmethod
     def toHeatmap(image, gazes, eyes, gazes_min, gazes_max):
         objects = []
