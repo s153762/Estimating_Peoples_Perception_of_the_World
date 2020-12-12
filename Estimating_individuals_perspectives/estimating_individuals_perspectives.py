@@ -12,6 +12,7 @@ from detecting_attended_targets.detecting_attended_targets import DetectingAtten
 from gaze360.gaze360 import Gaze360
 from gaze_field_of_vision import GazeToFieldOfVision
 from detectron.detecron2_keypoint import Detectron2Keypoints
+from bbox_in_field_of_vision import BboxInFieldOfVision
 
 class EstimatingIndividualsPerspective:
     def __init__(self):
@@ -28,6 +29,7 @@ class EstimatingIndividualsPerspective:
         self.detectingAttendedTargets = DetectingAttendedTargets('detecting_attended_targets/model_weights/model_demo.pt', )
         self.gaze360 = Gaze360('gaze360/gaze360_model.pth.tar', )
         self.gazeToFieldOfVision = GazeToFieldOfVision(self.target)
+        self.bboxInFieldOfVision = BboxInFieldOfVision(self.target)
 
 
 
@@ -36,7 +38,7 @@ class EstimatingIndividualsPerspective:
         if self.use_webcam:
             vc = cv2.VideoCapture(0)
         else:
-            vc = cv2.VideoCapture('../../TrainingSet/TwoPersons.m4v');  # TwoPersons.m4v');#
+            vc = cv2.VideoCapture('../../TrainingSet/TwoPersons.m4v') #test.mp4');  # TwoPersons.m4v');#
 
         # Setup plots
         axs = self.setup_plot(2)
@@ -48,8 +50,9 @@ class EstimatingIndividualsPerspective:
         if image_raw is not None:
             ims.append(axs[0].imshow(image));
             ims.append(axs[1].imshow(image));
-            self.target[3] = image_raw.shape[1]
+            self.target[3] = image_raw.shape[0]
             self.gazeToFieldOfVision.set_target(self.target)
+            self.bboxInFieldOfVision.set_target(self.target)
         else:
             im = Image.new('RGBA', (1280,720), (0, 0, 0, 255))
             ims.append(axs[0].imshow(im))
@@ -81,8 +84,10 @@ class EstimatingIndividualsPerspective:
                 ims[1].set_data(blended)
 
                 gazes, min, max = self.plot_gaze360(self.gaze360, image, face_locations)
-                polygons, prob_image = GazeToFieldOfVision.toHeatmap(image, gazes, face_landmarks, min, max)
+                angles, _ = self.bboxInFieldOfVision.get_bbox_Field_of_vision_angles(gazes, face_landmarks)
+                polygons, prob_image = GazeToFieldOfVision.toHeatmap(image, gazes, face_landmarks, min, max, angles)
                 probs = self.gazeToFieldOfVision.get_probabilities(prob_image)
+
 
                 #heatmap_array = np.array(Image.alpha_composite(black_image, heatmap))
                 #mask_array = np.array(mask)
@@ -97,10 +102,8 @@ class EstimatingIndividualsPerspective:
                     i += 1
                 target_prob = heatmapGaze.crop(np.array(self.target).astype(int))
                 ims[1].set_data(target_prob)
-                t = 0
                 while len(probs) > len(axs[1].texts):
-                    axs[1].text(10, t, "0")
-                    t += 20
+                    axs[1].text(10, len(axs[1].texts)*40, "0")
                 t = 0
                 for prob in probs:
                     axs[1].texts[t].set_text(str(prob))
@@ -117,7 +120,7 @@ class EstimatingIndividualsPerspective:
                     axs[0].add_patch(ply)
 
                 plt.pause(0.0001)
-                plt.savefig("result/frame"+str(no)+".png")
+                #plt.savefig("result/frame"+str(no)+".png")
                 no += 1
                 for ply in polygons:
                     ply.remove()

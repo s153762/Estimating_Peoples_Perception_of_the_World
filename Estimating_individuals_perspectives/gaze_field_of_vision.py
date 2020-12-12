@@ -22,7 +22,7 @@ class GazeToFieldOfVision():
         return mean/255*100
 
     @staticmethod
-    def toHeatmap(image, gazes, eyes, gazes_min, gazes_max):
+    def toHeatmap(image, gazes, eyes, gazes_min, gazes_max, angles):
         objects = []
         probability_images = []
         for i in range(len(gazes)):
@@ -31,16 +31,22 @@ class GazeToFieldOfVision():
             min = gazes_min[i]
             max = gazes_max[i]
             gaze_vektor = Gaze360.makeGaze2d(gaze)
+            angle = angles[i]
 
-            rotate1 = Gaze360.makeGaze2d(min)
-            rotate2 = Gaze360.makeGaze2d(max)
+            min_pred = Gaze360.makeGaze2d(min)
+            max_pred = Gaze360.makeGaze2d(max)
+            rotate_estimate1 = GazeToFieldOfVision.rotate(angle[0], gaze_vektor)
+            rotate_estimate2 = GazeToFieldOfVision.rotate(angle[1], gaze_vektor)
 
-            above = patches.Arrow(eye[0], eye[1], rotate1[0], rotate1[1], linewidth=1, edgecolor=(1, 0.5, 0), facecolor='none')
+            above = patches.Arrow(eye[0], eye[1], min_pred[0], min_pred[1], linewidth=1, edgecolor=(1, 0.5, 0), facecolor='none')
             real = patches.Arrow(eye[0], eye[1], gaze_vektor[0], gaze_vektor[1], linewidth=1, edgecolor=(1, 0, 0), facecolor='none')
-            below = patches.Arrow(eye[0], eye[1], rotate2[0], rotate2[1], linewidth=1, edgecolor=(1, 0, 1), facecolor='none')
-            map = GazeToFieldOfVision.get_probability_map(image.size, eye, gaze_vektor, rotate1, rotate2)
+            below = patches.Arrow(eye[0], eye[1], max_pred[0], max_pred[1], linewidth=1, edgecolor=(1, 0, 1), facecolor='none')
+            est1 = patches.Arrow(eye[0], eye[1], rotate_estimate1[0], rotate_estimate1[1], linewidth=1, edgecolor=(0, 1, 0), facecolor='none')
+            est2 = patches.Arrow(eye[0], eye[1], rotate_estimate2[0], rotate_estimate2[1], linewidth=1, edgecolor=(0, 1, 0), facecolor='none')
 
-            objects += [above, real, below]
+            map = GazeToFieldOfVision.get_probability_map(image.size, eye, gaze_vektor, min_pred, max_pred)
+
+            objects += [above, real, below, est1, est2]
             probability_images += [Image.fromarray(map)]
 
         return objects, probability_images
@@ -54,6 +60,15 @@ class GazeToFieldOfVision():
 
         path = Path(poly_verts, codes)
         return path
+
+    @staticmethod
+    def rotate(degree, gaze):
+        theta = degree#np.radians(degree)
+        r = np.array(((np.cos(theta), -np.sin(theta)),
+                      (np.sin(theta), np.cos(theta))))
+        rotated = r.dot(np.array(gaze))
+        rotated[0] = -rotated[0]
+        return rotated
 
     @staticmethod
     def get_mask(shape, verts):

@@ -13,7 +13,7 @@ class Gaze360:
     model = None;
     transforms_normalize = None
     input_images = None
-    image_count = 0
+
 
     def __init__(self, model_weights):
         print('Starting Gaze360')
@@ -28,6 +28,7 @@ class Gaze360:
         checkpoint = torch.load(model_weights, map_location=lambda storage, loc: storage)
         self.model.load_state_dict(checkpoint['state_dict'])
         self.model.eval()
+        self.image_count = 0
 
     def _get_transform(self):
         transform_list = []
@@ -81,10 +82,10 @@ class Gaze360:
             head_boxs.append([left, top, right, bottom])
             head = image.crop((head_boxs[count]))  # head crop
             input_image[count, self.image_count, :, :, :] = self.transforms_normalize(head)
-            self.input_images[count, self.image_count, :, :, :] = input_image[count, self.image_count, :, :, :]
+            #self.input_images[count, self.image_count, :, :, :] = input_image[count, self.image_count, :, :, :]
             count += 1
 
-        self.image_count = (self.image_count + 1) % 7
+        #self.image_count = (self.image_count + 1) % 7
         return input_image, head_boxs
 
     def getGaze(self, input_image, amount):
