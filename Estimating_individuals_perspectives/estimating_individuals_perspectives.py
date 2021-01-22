@@ -20,6 +20,8 @@ class EstimatingIndividualsPerspective:
         print("Starting estimating individual's perspectives")
         self.use_webcam = False
         self.use_detectron2 = True
+        self.save_fig = False
+        self.probability_type = 2 # 1: mean of linear distribution, 2: von mises distribution
         if self.use_detectron2:
             self.detectron2 = Detectron2Keypoints()
 
@@ -58,7 +60,7 @@ class EstimatingIndividualsPerspective:
             ims.append(axs[0].imshow(im))
             ims.append(axs[1].imshow(im))
 
-        no = 0
+        frame_number = 0
         # Analyse images
         while vc.isOpened():
             if self.use_webcam:
@@ -91,34 +93,25 @@ class EstimatingIndividualsPerspective:
 
                 gazes, min, max = self.plot_gaze360(self.gaze360, image, face_locations)
                 angles, _ = self.bboxInFieldOfVision.get_bbox_Field_of_vision_angles(gazes, face_landmarks)
+
                 polygons, prob_image = GazeToFieldOfVision.toHeatmap(image, gazes, face_landmarks, min, max, angles)
-                probs = self.gazeToFieldOfVision.get_probabilities(prob_image)
-
-
-                #heatmap_array = np.array(Image.alpha_composite(black_image, heatmap))
-                #mask_array = np.array(mask)
-                #result = cv2.bitwise_and(heatmap_array, mask_array)
-                #ims[1].set_data(mask_array)
 
                 heatmapGaze = imageShow.convert("RGBA")
-                #i = 0
-                for image in prob_image:
-                    heatmapGaze = Image.alpha_composite(heatmapGaze, image.convert("RGBA"))
-                    #heatmapGaze = Image.alpha_composite(heatmapGaze, heatmaps[i].convert("RGBA"))
-                    #i += 1
-                target_prob = heatmapGaze.crop(np.array(self.target).astype(int))
-                #ims[1].set_data(target_prob)
+                if self.probability_type == 1:
+                    probs = self.gazeToFieldOfVision.get_probabilities(prob_image)
+                    # showing Probability image
+                    for image in prob_image:
+                        heatmapGaze = Image.alpha_composite(heatmapGaze, image.convert("RGBA"))
+
                 ims[0].set_data(heatmapGaze)
 
-
-                while len(probs) > len(axs[0].texts):
-                    axs[0].text(10, len(axs[0].texts)*40, "0")
-                t = 0
-                for prob in probs:
-                    axs[0].texts[t].set_text("probability for "+str(t)+": "+str(prob))
-                    t+=1
-
-
+                if self.probability_type == 1:
+                    while len(probs) > len(axs[0].texts):
+                        axs[0].text(10, len(axs[0].texts)*40, "0")
+                    t = 0
+                    for prob in probs:
+                        axs[0].texts[t].set_text("probability for "+str(t)+": "+str(prob))
+                        t+=1
 
 
                 for face in face_locations:
@@ -129,8 +122,10 @@ class EstimatingIndividualsPerspective:
                     axs[0].add_patch(ply)
 
                 plt.pause(0.0001)
-                #plt.savefig("result/frame"+str(no)+".png")
-                no += 1
+                if self.save_fig:
+                    plt.savefig("result/frame"+str(frame_number)+".png")
+                    frame_number += 1
+
                 for ply in polygons:
                     ply.remove()
             else:
