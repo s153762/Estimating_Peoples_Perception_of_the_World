@@ -1,8 +1,10 @@
 # https://gist.github.com/tibaes/35b9dbd7cbf81a98955067aa318290e7#file-video
 # https://medium.com/@kostal91/displaying-real-time-webcam-stream-in-ipython-at-relatively-high-framerate-8e67428ac522
+# https://colab.research.google.com/drive/16jcaJoc6bCFAQ96jDe2HwtXj7BMD_-m5#scrollTo=ZyAvNCJMmvFF
 
 # Some basic setup:
 # Setup detectron2 logger
+import detectron2
 from detectron2.utils.logger import setup_logger
 setup_logger()
 

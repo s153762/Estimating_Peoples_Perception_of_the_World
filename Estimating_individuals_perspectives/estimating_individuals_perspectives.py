@@ -1,7 +1,7 @@
 from PIL import Image
 import cv2
 import matplotlib
-matplotlib.use('Qt4Agg')
+matplotlib.use('macosx')#.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import face_recognition
@@ -61,10 +61,16 @@ class EstimatingIndividualsPerspective:
         no = 0
         # Analyse images
         while vc.isOpened():
-            for i in range(4): # skip 4 frames
-                image_raw, image = self.grab_frame(vc)
-                if image_raw is None:
-                    break;
+            if self.use_webcam:
+                while (True):
+                    image_raw, image = self.grab_frame(vc)
+                    if cv2.waitKey(1) & 0xFF == ord('q') or image_raw is not None:
+                        break
+            else:
+                for i in range(4): # skip 4 frames
+                    image_raw, image = self.grab_frame(vc)
+                    if image_raw is None:
+                        break;
 
             if image_raw is None:
                 vc.release();
@@ -80,13 +86,13 @@ class EstimatingIndividualsPerspective:
 
             # If faces are detected:
             if len(face_locations) > 0:
-                #heatmaps, blended = self.plot_detecting_attended_targets(self.detectingAttendedTargets, image, face_locations)
-                #ims[1].set_data(blended)
+                heatmaps, blended = self.plot_detecting_attended_targets(self.detectingAttendedTargets, image, face_locations)
+                ims[1].set_data(blended)
 
                 gazes, min, max = self.plot_gaze360(self.gaze360, image, face_locations)
                 angles, _ = self.bboxInFieldOfVision.get_bbox_Field_of_vision_angles(gazes, face_landmarks)
                 polygons, prob_image = GazeToFieldOfVision.toHeatmap(image, gazes, face_landmarks, min, max, angles)
-                #probs = self.gazeToFieldOfVision.get_probabilities(prob_image)
+                probs = self.gazeToFieldOfVision.get_probabilities(prob_image)
 
 
                 #heatmap_array = np.array(Image.alpha_composite(black_image, heatmap))
@@ -100,17 +106,17 @@ class EstimatingIndividualsPerspective:
                     heatmapGaze = Image.alpha_composite(heatmapGaze, image.convert("RGBA"))
                     #heatmapGaze = Image.alpha_composite(heatmapGaze, heatmaps[i].convert("RGBA"))
                     #i += 1
-                #target_prob = heatmapGaze.crop(np.array(self.target).astype(int))
+                target_prob = heatmapGaze.crop(np.array(self.target).astype(int))
                 #ims[1].set_data(target_prob)
                 ims[0].set_data(heatmapGaze)
 
 
-                #while len(probs) > len(axs[1].texts):
-                #    axs[1].text(10, len(axs[1].texts)*40, "0")
-                #t = 0
-                #for prob in probs:
-                #    axs[1].texts[t].set_text(str(prob))
-                #    t+=1
+                while len(probs) > len(axs[0].texts):
+                    axs[0].text(10, len(axs[0].texts)*40, "0")
+                t = 0
+                for prob in probs:
+                    axs[0].texts[t].set_text("probability for "+str(t)+": "+str(prob))
+                    t+=1
 
 
 
@@ -138,12 +144,13 @@ class EstimatingIndividualsPerspective:
 
     def plot_detecting_attended_targets(self, detectingAttendedTargets, image, face_locations):
         heatmaps = detectingAttendedTargets.getHeatmap(image, face_locations, True)
-        if type(heatmaps) == type([]):
-            map = image.convert("RGBA");
-            for heatmap in heatmaps:
-                map = Image.alpha_composite(map, heatmap)
-            return heatmaps, map
-        return heatmaps, Image.alpha_composite(image.convert("RGBA"), heatmaps)#Image.alpha_composite(Image.new('RGBA', image.size, (0, 0, 0, 0)), heatmap), Image.alpha_composite(image.convert("RGBA"), heatmap) #Image.blend(image.convert("RGBA"), heatmap, alpha=.5)
+        map = image.convert("RGBA");
+        for heatmap in heatmaps:
+            map = Image.alpha_composite(map, heatmap)
+        return heatmaps, map
+        # blended: Image.alpha_composite(image.convert("RGBA"), heatmaps)
+        # blended: Image.blend(image.convert("RGBA"), heatmap, alpha=.5)
+        # heatmaps: Image.alpha_composite(Image.new('RGBA', image.size, (0, 0, 0, 0)), heatmap)
 
 
     def plot_gaze360(self, gaze360, image, face_locations):
@@ -181,7 +188,7 @@ class EstimatingIndividualsPerspective:
 
     def setup_plot(self, number_of_axis, titles = ["Gaze360","DAVTV"]):
         fig = plt.figure(figsize=(18, 6))
-        fig.canvas.manager.window.move(0, 0);
+        #fig.canvas.manager.window.move(0, 0);
         axs = []
         for axis in range(1,number_of_axis+1):
             axs.append(plt.subplot(1, number_of_axis, axis))

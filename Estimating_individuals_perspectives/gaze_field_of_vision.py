@@ -165,7 +165,9 @@ class GazeToFieldOfVision():
             return v[0] * w[:,:,1] - v[1] * w[:,:,0]
 
         def inner_angle(v, w):
-            cosx = dot_product(v, w) / (length(v) * length_matrix(w))
+            division = (length(v) * length_matrix(w))
+            division[division == 0] = 1
+            cosx = dot_product(v, w) / division
             return np.arccos(cosx)  # in radians
 
         inner = inner_angle(A, B_matrix)
