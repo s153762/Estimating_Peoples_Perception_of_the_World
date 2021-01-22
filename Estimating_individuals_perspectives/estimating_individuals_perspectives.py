@@ -38,7 +38,7 @@ class EstimatingIndividualsPerspective:
         if self.use_webcam:
             vc = cv2.VideoCapture(0)
         else:
-            vc = cv2.VideoCapture('../../TrainingSet/TwoPersons.m4v') #test.mp4');  # TwoPersons.m4v');#
+            vc = cv2.VideoCapture('../../TrainingSet/TwoPersons.m4v') # test.mp4');  TwoPersons.m4v');#
 
         # Setup plots
         axs = self.setup_plot(2)
@@ -59,7 +59,7 @@ class EstimatingIndividualsPerspective:
             ims.append(axs[1].imshow(im))
 
         no = 0
-        # Analyse next image
+        # Analyse images
         while vc.isOpened():
             for i in range(4): # skip 4 frames
                 image_raw, image = self.grab_frame(vc)
@@ -80,13 +80,13 @@ class EstimatingIndividualsPerspective:
 
             # If faces are detected:
             if len(face_locations) > 0:
-                heatmaps, blended = self.plot_detecting_attended_targets(self.detectingAttendedTargets, image, face_locations)
-                ims[1].set_data(blended)
+                #heatmaps, blended = self.plot_detecting_attended_targets(self.detectingAttendedTargets, image, face_locations)
+                #ims[1].set_data(blended)
 
                 gazes, min, max = self.plot_gaze360(self.gaze360, image, face_locations)
                 angles, _ = self.bboxInFieldOfVision.get_bbox_Field_of_vision_angles(gazes, face_landmarks)
                 polygons, prob_image = GazeToFieldOfVision.toHeatmap(image, gazes, face_landmarks, min, max, angles)
-                probs = self.gazeToFieldOfVision.get_probabilities(prob_image)
+                #probs = self.gazeToFieldOfVision.get_probabilities(prob_image)
 
 
                 #heatmap_array = np.array(Image.alpha_composite(black_image, heatmap))
@@ -95,21 +95,24 @@ class EstimatingIndividualsPerspective:
                 #ims[1].set_data(mask_array)
 
                 heatmapGaze = imageShow.convert("RGBA")
-                i = 0
+                #i = 0
                 for image in prob_image:
                     heatmapGaze = Image.alpha_composite(heatmapGaze, image.convert("RGBA"))
-                    heatmapGaze = Image.alpha_composite(heatmapGaze, heatmaps[i].convert("RGBA"))
-                    i += 1
-                target_prob = heatmapGaze.crop(np.array(self.target).astype(int))
-                ims[1].set_data(target_prob)
-                while len(probs) > len(axs[1].texts):
-                    axs[1].text(10, len(axs[1].texts)*40, "0")
-                t = 0
-                for prob in probs:
-                    axs[1].texts[t].set_text(str(prob))
-                    t+=1
-
+                    #heatmapGaze = Image.alpha_composite(heatmapGaze, heatmaps[i].convert("RGBA"))
+                    #i += 1
+                #target_prob = heatmapGaze.crop(np.array(self.target).astype(int))
+                #ims[1].set_data(target_prob)
                 ims[0].set_data(heatmapGaze)
+
+
+                #while len(probs) > len(axs[1].texts):
+                #    axs[1].text(10, len(axs[1].texts)*40, "0")
+                #t = 0
+                #for prob in probs:
+                #    axs[1].texts[t].set_text(str(prob))
+                #    t+=1
+
+
 
 
                 for face in face_locations:
