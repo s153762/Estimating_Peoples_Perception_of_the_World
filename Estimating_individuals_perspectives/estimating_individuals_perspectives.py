@@ -25,6 +25,7 @@ class EstimatingIndividualsPerspective:
         self.threshold = 0.25
         self.probability_within_threshold = []
         self.probability_type = 2 # 1: mean of linear distribution, 2: von mises distribution
+        self.skip_initial_frames = 100
         if self.use_detectron2:
             self.detectron2 = Detectron2Keypoints()
 
@@ -44,7 +45,7 @@ class EstimatingIndividualsPerspective:
         if self.use_webcam:
             vc = cv2.VideoCapture(0)
         else:
-            vc = cv2.VideoCapture('../../TrainingSet/TwoPersons.m4v') # test.mp4');  frontHeadpose.m4v');#
+            vc = cv2.VideoCapture('../Emilie-Test2/240/2021-01-26-103117-Glasses.mp4') # ../../TrainingSet/TwoPersons.m4v'); test.mp4');  frontHeadpose.m4v');#
 
         # Setup plots
         axs = self.setup_plot(2)
@@ -65,6 +66,13 @@ class EstimatingIndividualsPerspective:
             ims.append(axs[1].imshow(im))
 
         frame_number = 0
+
+        # Skip the initial frames
+        for i in range(self.skip_initial_frames):
+            image_raw, image = self.grab_frame(vc)
+            if image_raw is None:
+                break;
+
         # Analyse images
         while vc.isOpened():
             if self.use_webcam:
@@ -73,7 +81,7 @@ class EstimatingIndividualsPerspective:
                     if cv2.waitKey(1) & 0xFF == ord('q') or image_raw is not None:
                         break
             else:
-                for i in range(2): # skip 2 frames
+                for i in range(10): # skip 2 frames
                     image_raw, image = self.grab_frame(vc)
                     if image_raw is None:
                         break;
@@ -113,7 +121,7 @@ class EstimatingIndividualsPerspective:
                         error_angle = max(angle_gaze_min, angle_gaze_max)
                         self.distribution.vonmises(error_angle)
                         probs.append(self.distribution.target_probability(angles_bbox[i][0],angles_bbox[i][1], opposites[i]))
-                        self.distribution.plot()
+                        #self.distribution.plot()
 
                 ims[0].set_data(heatmapGaze)
 

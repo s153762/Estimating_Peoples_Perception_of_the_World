@@ -47,14 +47,14 @@ class Detectron2Keypoints:
         pred_boxes = instances._fields["pred_boxes"].tensor.numpy()
         pred_keypoints = instances._fields["pred_keypoints"].numpy()
         for i in range(len(instances._fields["scores"])):
-            if instances._fields["scores"][i]>0.99:
+            if instances._fields["scores"][i]>0.99 and pred_keypoints[i].shape[0] == 17:
                 bbox.append(pred_boxes[i])
                 keypoints.append(pred_keypoints[i])
 
         keypoints = np.array(keypoints)
         bbox = np.array(bbox)
-        eyes = Detectron2Keypoints.keypoints_to_eyes(keypoints)
-        head_bbox = Detectron2Keypoints.bbox_keypoints_head_bbox(bbox, keypoints)
+        eyes = Detectron2Keypoints.keypoints_to_eyes(keypoints) if len(keypoints) > 0 else []
+        head_bbox = Detectron2Keypoints.bbox_keypoints_head_bbox(bbox, keypoints) if len(keypoints) > 0 else []
         return out.get_image(), head_bbox, eyes
 
     @staticmethod
