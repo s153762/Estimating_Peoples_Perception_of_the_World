@@ -5,6 +5,8 @@ import torchvision.transforms as transforms
 import numpy as np
 import matplotlib.patches as patches
 import math
+from collections import deque
+from torch import Tensor
 #import face_recognition
 
 from gaze360.model import GazeLSTM
@@ -28,7 +30,7 @@ class Gaze360:
         checkpoint = torch.load(model_weights, map_location=lambda storage, loc: storage)
         self.model.load_state_dict(checkpoint['state_dict'])
         self.model.eval()
-        self.image_count = 0
+        self.image_people_count = 0
 
     def _get_transform(self):
         transform_list = []
@@ -41,14 +43,30 @@ class Gaze360:
         output = torch.zeros(x.size(0), 3)
         polar_angle = x[:, 0]
         azimuthal_angle = x[:, 1]
-        output[:, 1] = torch.cos(azimuthal_angle) * torch.sin(polar_angle)
-        output[:, 0] = torch.sin(azimuthal_angle)
+        output[:, 1] = torch.sin(azimuthal_angle)
+        output[:, 0] = torch.cos(azimuthal_angle) * torch.sin(polar_angle)
         output[:, 2] = -torch.cos(azimuthal_angle)*torch.cos(polar_angle)
         return output
 
+    #@staticmethod # First implementation
+    #def makeGaze2d(gaze):
+    #    gaze[:, 0] = -gaze[:, 0]
+    #    n = [0, 0, 1]
+    #    def length(v):
+    #        return math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
+    #    def dot_product(v, w):
+    #        return v[0] * w[:, 0] + v[1] * w[:, 1] + v[2] * w[:, 2]
+    #    def times(v, n):
+    #        return [v[0] * n, v[1] * n, v[2] * n]
+    #    def minus(v, w):
+    #        return np.array([v[:, 0] - w[0], v[:, 1] - w[1], v[:, 2] - w[2]])
+    #    proj = times(n, (dot_product(n, gaze) / (length(n) ** 2)))
+    #    test = minus(gaze, proj)
+    #    return test[:-1].transpose() * 100
+
     @staticmethod
-    def makeGaze2d(gaze):
-        gaze = [-gaze[0],gaze[1],gaze[2]]
+    def gaze_2d(gaze):
+        gaze = [-gaze[0],-gaze[1],-gaze[2]]#[-gaze[1],gaze[0],gaze[2]]
         n = [0,0,1]
         def length(v):
             return math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
@@ -70,47 +88,59 @@ class Gaze360:
         return patches.Rectangle((head_box[0], head_box[1]), head_box[2] - head_box[0], head_box[3] - head_box[1],
                               linewidth=1, edgecolor=(0, 1, 1), facecolor='none')
 
+    @staticmethod
+    def push_to_tensor(tensor, x):
+        return torch.cat((tensor[1:], x.unsqueeze(0)))
 
-    def getHeadbox(self, image, face_locations):
+    def get_headbox(self, image, face_locations):
         count = 0
-        input_image = torch.zeros(len(face_locations), 7, 3, 224, 224) #self.input_images[:len(face_locations), :,:,:,:]
+        input_image = self.input_images[:len(face_locations), :,:,:,:] #torch.zeros(len(face_locations), 7, 3, 224, 224) #
         head_boxs = []
-        #eyes = []
 
         for face_location in face_locations:
             top, right, bottom, left = face_location
             head_boxs.append([left, top, right, bottom])
             head = image.crop((head_boxs[count]))  # head crop
-            input_image[count, self.image_count, :, :, :] = self.transforms_normalize(head)
+            if self.image_people_count <= count:
+                for i in range(7):
+                    input_image[count, i, :, :, :] = self.transforms_normalize(head)
+                self.image_people_count += 1
+                self.input_images[count] = input_image[count]
+            else:
+                self.input_images[count] = Gaze360.push_to_tensor(self.input_images[count],self.transforms_normalize(head))
             #self.input_images[count, self.image_count, :, :, :] = input_image[count, self.image_count, :, :, :]
             count += 1
 
         #self.image_count = (self.image_count + 1) % 7
-        return input_image, head_boxs
+        return self.input_images[:len(face_locations)], head_boxs
 
-    def getGaze(self, input_image, amount):
+    def get_gaze(self, input_image, amount):
         # forward pass
         input = input_image.view(amount, 7, 3, 224, 224)
         output_gaze, var = self.model(input)  # .cuda())
         #var = var.detach().numpy()
         gazes = self.spherical2cartesial(output_gaze).detach().numpy()
-        gazes_min = self.spherical2cartesial(output_gaze-var).detach().numpy()
-        gazes_max = self.spherical2cartesial(output_gaze+var).detach().numpy()
+        gazes_10 = self.spherical2cartesial(output_gaze-var).detach().numpy()
+        gazes_90 = self.spherical2cartesial(output_gaze+var).detach().numpy()
         print("Var: ", var)
-        print("Gazes: ", gazes, gazes_min, gazes_max)
-        return gazes, gazes_min, gazes_max
+        print("Gazes: ", gazes, gazes_10, gazes_90)
+        return gazes, gazes_10, gazes_90
 
-    def get_gaze_direction(self, image, face_locations, printTime):
+    def get_gaze_direction(self, image, face_locations, printTime, get2D = True):
         if printTime:
             starttime = time.time()
 
-        input_image, head_boxs = self.getHeadbox(image, face_locations)
-        gazes, min, max = self.getGaze(input_image, len(face_locations))
+        input_image, head_boxs = self.get_headbox(image, face_locations)
+        gazes, gazes_10, gazes_90 = self.get_gaze(input_image, len(face_locations))
+        if get2D:
+            gazes = np.array([self.gaze_2d(gaze) for gaze in gazes])
+            gazes_10 = np.array([self.gaze_2d(gaze) for gaze in gazes_10])
+            gazes_90 = np.array([self.gaze_2d(gaze) for gaze in gazes_90])
         if printTime:
             print("Time taken to estimate gaze369: ", time.time() - starttime)
 
-        return gazes, min, max
+        return gazes, gazes_10, gazes_90
 
     @staticmethod
-    def midpointTwoCoordinates(p1, p2):
+    def midpoint_two_coordinates(p1, p2):
         return [(p1[0]+p2[0])/2, (p1[1]+p2[1])/2]

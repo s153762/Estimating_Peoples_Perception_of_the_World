@@ -3,7 +3,6 @@ import numpy as np
 import math
 from PIL import Image
 from matplotlib.path import Path
-from gaze360.gaze360 import Gaze360
 
 class GazeToFieldOfVision():
 
@@ -22,31 +21,29 @@ class GazeToFieldOfVision():
         return mean/255*100
 
     @staticmethod
-    def toHeatmap(image, gazes, eyes, gazes_min, gazes_max, angles):
+    def get_probability_heatmap(image, gazes, eyes, gazes_10, gazes_90, angles):
         objects = []
         probability_images = []
         for i in range(len(gazes)):
-            gaze = gazes[i]
+            gaze_vektor = gazes[i]
             eye = eyes[i]
-            min = gazes_min[i]
-            max = gazes_max[i]
-            gaze_vektor = Gaze360.makeGaze2d(gaze)
+            gaze_10 = gazes_10[i]
+            gaze_90 = gazes_90[i]
             angle = angles[i]
 
-            min_pred = Gaze360.makeGaze2d(min)
-            max_pred = Gaze360.makeGaze2d(max)
             rotate_estimate1 = GazeToFieldOfVision.rotate(angle[0], gaze_vektor)
             rotate_estimate2 = GazeToFieldOfVision.rotate(angle[1], gaze_vektor)
 
-            above = patches.Arrow(eye[0], eye[1], min_pred[0], min_pred[1], linewidth=1, edgecolor=(1, 0.5, 0), facecolor='none')
-            real = patches.Arrow(eye[0], eye[1], gaze_vektor[0], gaze_vektor[1], linewidth=1, edgecolor=(1, 0, 0), facecolor='none')
-            below = patches.Arrow(eye[0], eye[1], max_pred[0], max_pred[1], linewidth=1, edgecolor=(1, 0, 1), facecolor='none')
-            est1 = patches.Arrow(eye[0], eye[1], rotate_estimate1[0], rotate_estimate1[1], linewidth=1, edgecolor=(0, 1, 0), facecolor='none')
-            est2 = patches.Arrow(eye[0], eye[1], rotate_estimate2[0], rotate_estimate2[1], linewidth=1, edgecolor=(0, 1, 0), facecolor='none')
+            real_10 = patches.Arrow(eye[0], eye[1], gaze_10[0], gaze_10[1], linewidth=1, edgecolor=(1, 0.5, 0), facecolor='none',label="10% quantile")
+            real = patches.Arrow(eye[0], eye[1], gaze_vektor[0], gaze_vektor[1], linewidth=1, edgecolor=(1, 0, 0), facecolor='none',label="50% quantile")
+            real_90 = patches.Arrow(eye[0], eye[1], gaze_90[0], gaze_90[1], linewidth=1, edgecolor=(1, 0, 1), facecolor='none',label="90% quantile")
+            est1 = patches.Arrow(eye[0], eye[1], rotate_estimate1[0], rotate_estimate1[1], linewidth=1, edgecolor=(0, 1, 0), facecolor='none',label="Left target")
+            est2 = patches.Arrow(eye[0], eye[1], rotate_estimate2[0], rotate_estimate2[1], linewidth=1, edgecolor=(0, 1, 0), facecolor='none',label="Right target")
 
-            map = GazeToFieldOfVision.get_probability_map(image.size, eye, gaze_vektor, min_pred, max_pred)
+            angle_gaze_min, angle_gaze_max = GazeToFieldOfVision.get_min_max_angles(gaze_vektor, gaze_10, gaze_90)
+            map = GazeToFieldOfVision.get_probability_map(image.size, eye, gaze_vektor, angle_gaze_min, angle_gaze_max)
 
-            objects += [above, real, below, est1, est2]
+            objects += [real_10, real, real_90, est1, est2]
             probability_images += [Image.fromarray(map)]
 
         return objects, probability_images
@@ -62,12 +59,24 @@ class GazeToFieldOfVision():
         return path
 
     @staticmethod
-    def rotate(degree, gaze):
-        theta = degree#np.radians(degree)
+    def get_min_max_angles(gaze, gaze_min, gaze_max, get_clockwise = False):
+        #if len(gaze) == 3:
+        #    gaze = Gaze360.makeGaze2d(gaze)
+        #if len(gaze_min) == 3:
+        #    gaze_min = Gaze360.makeGaze2d(gaze_min)
+        #    gaze_max = Gaze360.makeGaze2d(gaze_max)
+        #gaze_min = GazeToFieldOfVision.swap(gaze_min)
+        #gaze_max = GazeToFieldOfVision.swap(gaze_max)
+        angle_gaze_min = GazeToFieldOfVision.get_angle(gaze_min, gaze,get_clockwise)  # np.arccos(np.dot(unit_gaze_min, unit_gaze))
+        angle_gaze_max = GazeToFieldOfVision.get_angle(gaze_max, gaze,get_clockwise)  # np.arccos(np.dot(unit_gaze_max, unit_gaze))
+        return angle_gaze_min, angle_gaze_max
+
+    @staticmethod
+    def rotate(theta, gaze):
+        #rotated = np.array([np.cos(theta)*gaze[0]-np.sin(theta)*gaze[1], np.sin(theta)*gaze[0]+np.cos(theta)*gaze[1]])
         r = np.array(((np.cos(theta), -np.sin(theta)),
                       (np.sin(theta), np.cos(theta))))
         rotated = r.dot(np.array(gaze))
-        rotated[0] = -rotated[0]
         return rotated
 
     @staticmethod
@@ -90,13 +99,11 @@ class GazeToFieldOfVision():
 
 
     @staticmethod
-    def get_probability_map(shape, eye, gaze, gaze_min, gaze_max):
+    def get_probability_map(shape, eye, gaze, angle_gaze_min, angle_gaze_max):
         shape = GazeToFieldOfVision.swap(shape)
 
         eye = GazeToFieldOfVision.swap(eye)
         gaze = GazeToFieldOfVision.swap(gaze)
-        gaze_min = GazeToFieldOfVision.swap(gaze_min)
-        gaze_max = GazeToFieldOfVision.swap(gaze_max)
 
         # broadcasting solution
         coordinate_map = GazeToFieldOfVision.coordinates(shape);
@@ -104,9 +111,8 @@ class GazeToFieldOfVision():
         coordinate_map[:, :, 1] = coordinate_map[:, :, 1] - eye[1] # get vector to coordinate
         map = GazeToFieldOfVision.angle_matrix(gaze, coordinate_map)
 
-        angle_gaze_min = GazeToFieldOfVision.get_angle(gaze_min, gaze) #np.arccos(np.dot(unit_gaze_min, unit_gaze))
-        angle_gaze_max = GazeToFieldOfVision.get_angle(gaze_max, gaze) #np.arccos(np.dot(unit_gaze_max, unit_gaze))
-        a,b = GazeToFieldOfVision.get_linear_function_params(0,max(angle_gaze_min,angle_gaze_max), 255, (255/100)*20)
+        error_angle = max(angle_gaze_min, angle_gaze_max)
+        a,b = GazeToFieldOfVision.get_linear_function_params(0,error_angle, 255, (255/100)*20)
         map = map*a+b;
         map[map < 0] = 0
         map[map > 255] = 255
@@ -118,7 +124,7 @@ class GazeToFieldOfVision():
 
 
     @staticmethod
-    def get_angle(B, A, get_clockwise = False):
+    def get_angle(B, A, get_clockwise = True):
         def length(v):
             return math.sqrt(v[0] ** 2 + v[1] ** 2)
 
@@ -134,9 +140,12 @@ class GazeToFieldOfVision():
 
         inner = inner_angle(A, B)
         det = determinant(A, B)
-        if det < 0 or not get_clockwise:  # this is a property of the det. If the det < 0 then B is clockwise of A
+        # this is a property of the det. If the det < 0 then B is clockwise of A
+        # else if the det > 0 then A is immediately clockwise of B
+        # but in image x is opposite, so it is switched
+        if det > 0 or not get_clockwise:
             return inner
-        else:  # if the det > 0 then A is immediately clockwise of B
+        else:
             return - inner #math.pi*2 - inner
 
     @staticmethod

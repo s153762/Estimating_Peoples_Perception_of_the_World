@@ -1,4 +1,5 @@
 from scipy.optimize import fsolve
+from scipy.optimize import least_squares
 import scipy.integrate as integrate
 import numpy as np
 from scipy.stats import vonmises
@@ -35,9 +36,10 @@ class Distribution:
 
         # Initit K value
         z0 = [0.001]
-        kappa = fsolve(solve,z0)[0]
-        print(kappa)
-        self.params = [kappa]
+        #kappa = fsolve(solve,z0)[0]
+        #self.params = [kappa]
+        self.params = least_squares(solve, z0, bounds=((0), (1000)))['x']
+
 
     def plot(self):
         if(self.distribution_type=="vonmises"):
@@ -71,12 +73,13 @@ class Distribution:
             t1 = cdf(a1,kappa)
             t2 = cdf(a2,kappa)
             self.results = [t1, t2]
-            ans = t2[0]-t1[0]
+            ans = np.abs(t2[0]-t1[0])
             if opposite:
                 ans = 1-ans
 
             print(self.results)
             print(ans)
+            return ans
 
 
 
