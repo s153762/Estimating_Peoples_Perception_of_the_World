@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="92362fdf-3065-493c-bf6f-0d6036ac5745" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/detectron/detecron2_keypoint.py" beforeDir="false" afterPath="$PROJECT_DIR$/detectron/detecron2_keypoint.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/estimating_individuals_perspectives.py" beforeDir="false" afterPath="$PROJECT_DIR$/estimating_individuals_perspectives.py" afterDir="false" />
-    </list>
+    <list default="true" id="92362fdf-3065-493c-bf6f-0d6036ac5745" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -186,7 +182,7 @@
       <workItem from="1611299615325" duration="627000" />
       <workItem from="1611300256251" duration="4004000" />
       <workItem from="1611305213151" duration="2217000" />
-      <workItem from="1611307627203" duration="41994000" />
+      <workItem from="1611307627203" duration="42350000" />
     </task>
     <servers />
   </component>
