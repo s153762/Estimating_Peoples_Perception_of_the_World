@@ -23,6 +23,7 @@ class DetectingAttendedTargets:
 
         # set up data transformation
         self.transforms_normalize = self._get_transform()
+        self.detectingAttendedTargets_time = 0
 
         # Model
         self.model = ModelSpatial()
@@ -47,10 +48,7 @@ class DetectingAttendedTargets:
         with torch.no_grad():
             width, height = image.size
             heatmap = Image.new('RGBA', (width, height), (0, 0, 0, 0));
-            starttime = None;
-
-            if printTime:
-                starttime = time.time()
+            starttime = time.time()
 
             count = 0
             for face_location in face_locations:
@@ -58,6 +56,7 @@ class DetectingAttendedTargets:
                 heatmaps.append(DetectingAttendedTargets.black_to_transparency(heatmap_new))
                 heatmap = Image.alpha_composite(heatmap, heatmap_new)
                 count += 1
+        self.detectingAttendedTargets_time += time.time()-starttime
         if printTime:
             print("Time taken to estimate attended targets: ", time.time()-starttime)
         if multiple:

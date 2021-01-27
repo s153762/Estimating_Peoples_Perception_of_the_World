@@ -89,7 +89,7 @@ class EstimatingIndividualsPerspective:
                     if cv2.waitKey(1) & 0xFF == ord('q') or image_raw is not None:
                         break
             else:
-                for i in range(1): # skip 2 frames
+                for i in range(2): # skip 2 frames
                     image_raw, image = self.grab_frame(vc)
                     if image_raw is None:
                         break;
@@ -164,7 +164,7 @@ class EstimatingIndividualsPerspective:
                     if first_run:
                         # Save in video
                         w, h = canvas.get_width_height()
-                        out = cv2.VideoWriter(output+'.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 15, (w, h), True)
+                        out = cv2.VideoWriter(output+'.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (w, h), True)
                         first_run = False
                     figure = np.array(list(buf),'uint8').reshape(h, w, 3)
                 out.write(cv2.cvtColor(figure,cv2.COLOR_RGB2BGR))
@@ -183,7 +183,7 @@ class EstimatingIndividualsPerspective:
         if self.plot_frames:
             plt.ioff()
             plt.show()
-        return self.save_probs
+        return self.save_probs, self.gaze360.gaze360_time, self.detectingAttendedTargets.detectingAttendedTargets_time
 
     def create_face_bbox(self, face_locations, can_see_target):
         polygons = []
@@ -225,7 +225,7 @@ class EstimatingIndividualsPerspective:
 
 
     def plot_gaze360(self, gaze360, image, face_locations):
-        return gaze360.get_gaze_direction(image, face_locations, True)
+        return gaze360.get_gaze_direction(image, face_locations, False)
 
 
     def grab_frame(self, vc):
@@ -284,8 +284,10 @@ if __name__ == "__main__":
         output = directory_output+"/"+os.path.splitext(file)[0]+"-result"
         print("-----------------( "+input+", "+output+" )-----------------"+str(i))
         starttime = time.time()
-        probs[os.path.splitext(file)[0]] = EstimatingIndividualsPerspective().main(input, output)
+        probs[os.path.splitext(file)[0]], gaze360_time,  detectingAttendedTargets_time = EstimatingIndividualsPerspective().main(input, output)
         probs[os.path.splitext(file)[0]+"-time"] = time.time() - starttime
+        probs[os.path.splitext(file)[0] + "-gaze360_time"] = gaze360_time
+        probs[os.path.splitext(file)[0] + "-detectingAttendedTargets_time"] = detectingAttendedTargets_time
         print("Time taken to estimate gaze369: ", probs[os.path.splitext(file)[0]+"-time"])
         i += 1
 

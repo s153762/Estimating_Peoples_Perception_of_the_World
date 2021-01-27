@@ -31,6 +31,7 @@ class Gaze360:
         self.model.load_state_dict(checkpoint['state_dict'])
         self.model.eval()
         self.image_people_count = 0
+        self.gaze360_time = 0
 
     def _get_transform(self):
         transform_list = []
@@ -127,8 +128,7 @@ class Gaze360:
         return gazes, gazes_10, gazes_90
 
     def get_gaze_direction(self, image, face_locations, printTime, get2D = True):
-        if printTime:
-            starttime = time.time()
+        starttime = time.time()
 
         input_image, head_boxs = self.get_headbox(image, face_locations)
         gazes, gazes_10, gazes_90 = self.get_gaze(input_image, len(face_locations))
@@ -136,9 +136,10 @@ class Gaze360:
             gazes = np.array([self.gaze_2d(gaze) for gaze in gazes])
             gazes_10 = np.array([self.gaze_2d(gaze) for gaze in gazes_10])
             gazes_90 = np.array([self.gaze_2d(gaze) for gaze in gazes_90])
+
+        self.gaze360_time += time.time() - starttime
         if printTime:
             print("Time taken to estimate gaze369: ", time.time() - starttime)
-
         return gazes, gazes_10, gazes_90
 
     @staticmethod
