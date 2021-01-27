@@ -277,8 +277,8 @@ class EstimatingIndividualsPerspective:
 
 if __name__ == "__main__":
 
-    directory = "../Test_data/Redigeret_Test1_Test2"
-    directory_output = "../Test_data/Results_Test1_Test2"
+    directory = "../Test_data/Test3/Redigeret"
+    directory_output = "../Test_data/Test3/Results"
     files = os.listdir(directory)
     probs = {}
     i = 0
