@@ -36,9 +36,13 @@ class Distribution:
 
         # Initit K value
         z0 = [0.001]
-        #kappa = fsolve(solve,z0)[0]
-        #self.params = [kappa]
-        self.params = least_squares(solve, z0, bounds=((0), (1000)))['x']
+
+        kappa = fsolve(solve, z0)[0]
+        self.params = [kappa]
+        if kappa < 0:
+            kappa = least_squares(solve, z0, bounds=((0), (1000)))
+            self.params = kappa['x']
+
 
 
     def plot(self):

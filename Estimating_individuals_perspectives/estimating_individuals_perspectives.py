@@ -1,3 +1,5 @@
+import os
+import json
 from PIL import Image
 import cv2
 import matplotlib
@@ -7,6 +9,7 @@ import matplotlib.patches as patches
 import face_recognition
 import time
 import numpy as np
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 from detecting_attended_targets.detecting_attended_targets import DetectingAttendedTargets
 from gaze360.gaze360 import Gaze360
@@ -22,10 +25,13 @@ class EstimatingIndividualsPerspective:
         self.use_webcam = False
         self.use_detectron2 = True
         self.save_fig = False
+        self.save_vid = True
+        self.plot_frames = False
         self.threshold = 0.25
         self.probability_within_threshold = []
+        self.save_probs = []
         self.probability_type = 2 # 1: mean of linear distribution, 2: von mises distribution
-        self.skip_initial_frames = 100
+        self.skip_initial_frames = 0
         if self.use_detectron2:
             self.detectron2 = Detectron2Keypoints()
 
@@ -40,16 +46,17 @@ class EstimatingIndividualsPerspective:
 
 
 
-    def main(self):
+    def main(self, input, output):
         # Get Data
         if self.use_webcam:
             vc = cv2.VideoCapture(0)
         else:
-            vc = cv2.VideoCapture('../Emilie-Test2/240/2021-01-26-103117-Glasses.mp4') # ../../TrainingSet/TwoPersons.m4v'); test.mp4');  frontHeadpose.m4v');#
+            vc = cv2.VideoCapture(input)
 
         # Setup plots
-        axs = self.setup_plot(2)
-        plt.ion()
+        axs, canvas = self.setup_plot(2)
+        if self.plot_frames:
+            plt.ion()
 
         # Initialize data / plots
         image_raw, image = self.grab_frame(vc)
@@ -74,6 +81,7 @@ class EstimatingIndividualsPerspective:
                 break;
 
         # Analyse images
+        first_run = True
         while vc.isOpened():
             if self.use_webcam:
                 while (True):
@@ -81,13 +89,14 @@ class EstimatingIndividualsPerspective:
                     if cv2.waitKey(1) & 0xFF == ord('q') or image_raw is not None:
                         break
             else:
-                for i in range(10): # skip 2 frames
+                for i in range(1): # skip 2 frames
                     image_raw, image = self.grab_frame(vc)
                     if image_raw is None:
                         break;
 
             if image_raw is None:
                 vc.release();
+                out.release();
                 cv2.destroyAllWindows()
                 continue;
 
@@ -127,6 +136,7 @@ class EstimatingIndividualsPerspective:
 
                 can_see_target = self.within_threshold(probs)
                 self.probability_within_threshold.append(can_see_target)
+                self.save_probs.append(probs)
                 self.display_total_threshold(axs[0])
                 polygons += self.create_face_bbox(face_locations, can_see_target)
                 #polygons += self.create_target_bbox(self.target)
@@ -137,14 +147,27 @@ class EstimatingIndividualsPerspective:
 
                 t = 1
                 for prob in probs:
-                    axs[0].texts[t].set_text("Probability for "+str(t)+": "+"%.2f" % prob)
+                    axs[0].texts[t].set_text("Probability for "+str(t-1)+": "+"%.2f" % prob)
                     t+=1
 
                 axs[0].legend(handles=polygons)
                 for ply in polygons:
                     axs[0].add_patch(ply)
 
-                plt.pause(0.0001)
+                if self.plot_frames:
+                    plt.pause(0.0001)
+                if self.save_vid:
+                    canvas.draw()
+                    # https://stackoverflow.com/questions/42603161/convert-an-image-shown-in-python-into-an-opencv-image
+                    # https://python.hotexamples.com/examples/matplotlib.backends.backend_agg/FigureCanvasAgg/tostring_rgb/python-figurecanvasagg-tostring_rgb-method-examples.html
+                    buf = canvas.tostring_rgb()
+                    if first_run:
+                        # Save in video
+                        w, h = canvas.get_width_height()
+                        out = cv2.VideoWriter(output+'.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 15, (w, h), True)
+                        first_run = False
+                    figure = np.array(list(buf),'uint8').reshape(h, w, 3)
+                out.write(cv2.cvtColor(figure,cv2.COLOR_RGB2BGR))
                 if self.save_fig:
                     plt.savefig("result/frame"+str(frame_number)+".png")
                     frame_number += 1
@@ -154,10 +177,13 @@ class EstimatingIndividualsPerspective:
             else:
                 ims[0].set_data(imageShow)
                 ims[1].set_data(imageShow)
-                plt.pause(0.0001)
+                if self.plot_frames:
+                    plt.pause(0.0001)
 
-        plt.ioff()
-        plt.show()
+        if self.plot_frames:
+            plt.ioff()
+            plt.show()
+        return self.save_probs
 
     def create_face_bbox(self, face_locations, can_see_target):
         polygons = []
@@ -234,6 +260,7 @@ class EstimatingIndividualsPerspective:
     def setup_plot(self, number_of_axis, titles = ["DAVTV","Gaze360"]):
         fig = plt.figure(figsize=(18, 6))
         #fig.canvas.manager.window.move(0, 0);
+        canvas = FigureCanvasAgg(fig)
         axs = []
         for axis in range(1,number_of_axis+1):
             axs.append(plt.subplot(1, number_of_axis, axis))
@@ -242,8 +269,32 @@ class EstimatingIndividualsPerspective:
         temp = axs[0]
         axs[0] = axs[1]
         axs[1] = temp
-        return axs
+        return axs, canvas
 
 
 if __name__ == "__main__":
-    EstimatingIndividualsPerspective().main()
+
+    directory = "../Test_data/Redigeret_Test1_Test2"
+    directory_output = "../Test_data/Results_Test1_Test2"
+    files = os.listdir(directory)
+    probs = {}
+    i = 0
+    for file in files:
+        input = directory+"/"+file
+        output = directory_output+"/"+os.path.splitext(file)[0]+"-result"
+        print("-----------------( "+input+", "+output+" )-----------------"+str(i))
+        starttime = time.time()
+        probs[os.path.splitext(file)[0]] = EstimatingIndividualsPerspective().main(input, output)
+        probs[os.path.splitext(file)[0]+"-time"] = time.time() - starttime
+        print("Time taken to estimate gaze369: ", probs[os.path.splitext(file)[0]+"-time"])
+        i += 1
+
+    with open(directory_output+'/results_test1_test2.json', 'w') as fp:
+        json.dump(probs, fp, sort_keys=True, indent=4)
+
+    # ../../TrainingSet/TwoPersons.m4v');
+    # ../../TrainingSet/test.mp4');
+    # ../../TrainingSet/frontHeadpose.m4v');
+    # '../Test_data/Test1/240/2021-01-26-111654.mp4'
+    # '../Test_data/Test2/170/2021-01-26-112002.mp4'
+
