@@ -123,8 +123,6 @@ class Gaze360:
         gazes = self.spherical2cartesial(output_gaze).detach().numpy()
         gazes_10 = self.spherical2cartesial(output_gaze-var).detach().numpy()
         gazes_90 = self.spherical2cartesial(output_gaze+var).detach().numpy()
-        print("Var: ", var)
-        print("Gazes: ", gazes, gazes_10, gazes_90)
         return gazes, gazes_10, gazes_90
 
     def get_gaze_direction(self, image, face_locations, printTime, get2D = True):
@@ -139,7 +137,7 @@ class Gaze360:
 
         self.gaze360_time += time.time() - starttime
         if printTime:
-            print("Time taken to estimate gaze369: ", time.time() - starttime)
+            print("Time taken to estimate gaze360: ", time.time() - starttime)
         return gazes, gazes_10, gazes_90
 
     @staticmethod

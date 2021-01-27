@@ -81,8 +81,8 @@ class Distribution:
             if opposite:
                 ans = 1-ans
 
-            print(self.results)
-            print(ans)
+            #print(self.results)
+            #print(ans)
             return ans
 
 

@@ -21,7 +21,6 @@ from distribution import Distribution
 class EstimatingIndividualsPerspective:
     def __init__(self):
         # initialize
-        print("Starting estimating individual's perspectives")
         self.use_webcam = False
         self.use_detectron2 = True
         self.save_fig = False
@@ -105,7 +104,7 @@ class EstimatingIndividualsPerspective:
                 imageShow = Image.fromarray(cv2.cvtColor(imageShow, cv2.COLOR_BGR2RGB))
                 imageShow = image
             else:
-                face_locations, face_landmarks = self.get_face_locations(image_raw, True, True)
+                face_locations, face_landmarks = self.get_face_locations(image_raw, True, False)
                 imageShow = image
 
             # If faces are detected:
@@ -170,7 +169,11 @@ class EstimatingIndividualsPerspective:
                 out.write(cv2.cvtColor(figure,cv2.COLOR_RGB2BGR))
                 if self.save_fig:
                     plt.savefig("result/frame"+str(frame_number)+".png")
-                    frame_number += 1
+                if frame_number % 45 == 0:
+                    print()
+                print(str(frame_number), end=", ")
+                frame_number += 1
+
 
                 for ply in polygons:
                     ply.remove()
@@ -182,7 +185,7 @@ class EstimatingIndividualsPerspective:
 
         if self.plot_frames:
             plt.ioff()
-            plt.show()
+        print()
         return self.save_probs, self.gaze360.gaze360_time, self.detectingAttendedTargets.detectingAttendedTargets_time
 
     def create_face_bbox(self, face_locations, can_see_target):
@@ -214,7 +217,7 @@ class EstimatingIndividualsPerspective:
         ax.texts[0].set_text(total_text)
 
     def plot_detecting_attended_targets(self, detectingAttendedTargets, image, face_locations):
-        heatmaps = detectingAttendedTargets.getHeatmap(image, face_locations, True)
+        heatmaps = detectingAttendedTargets.getHeatmap(image, face_locations, False)
         map = image.convert("RGBA");
         for heatmap in heatmaps:
             map = Image.alpha_composite(map, heatmap)
@@ -288,11 +291,11 @@ if __name__ == "__main__":
         probs[os.path.splitext(file)[0]+"-time"] = time.time() - starttime
         probs[os.path.splitext(file)[0] + "-gaze360_time"] = gaze360_time
         probs[os.path.splitext(file)[0] + "-detectingAttendedTargets_time"] = detectingAttendedTargets_time
-        print("Time taken to estimate gaze369: ", probs[os.path.splitext(file)[0]+"-time"])
+        print("Time taken to estimate perception: ", probs[os.path.splitext(file)[0]+"-time"])
         i += 1
 
-    with open(directory_output+'/results_test1_test2.json', 'w') as fp:
-        json.dump(probs, fp, sort_keys=True, indent=4)
+        with open(directory_output+'/results_test1_test2.json', 'w') as fp:
+            json.dump(probs, fp, sort_keys=True, indent=4)
 
     # ../../TrainingSet/TwoPersons.m4v');
     # ../../TrainingSet/test.mp4');
