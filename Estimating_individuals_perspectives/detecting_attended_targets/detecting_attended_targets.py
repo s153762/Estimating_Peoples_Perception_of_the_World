@@ -34,7 +34,7 @@ class DetectingAttendedTargets:
         self.model.load_state_dict(model_dict)
         # self.model.cuda()
         self.model.train(False)
-        self.colors = []
+        self.colors = {}
 
     def _get_transform(self):
         transform_list = []
@@ -50,12 +50,10 @@ class DetectingAttendedTargets:
             heatmap = Image.new('RGBA', (width, height), (0, 0, 0, 0));
             starttime = time.time()
 
-            count = 0
-            for face_location in face_locations:
-                heatmap_new = self.color_array(self.getSingleHeatmap(image, face_location, width, height), count)
+            for key,face_location in face_locations.items():
+                heatmap_new = self.color_array(self.getSingleHeatmap(image, face_location, width, height), key)
                 heatmaps.append(DetectingAttendedTargets.black_to_transparency(heatmap_new))
                 heatmap = Image.alpha_composite(heatmap, heatmap_new)
-                count += 1
         self.detectingAttendedTargets_time += time.time()-starttime
         if printTime:
             print("Time taken to estimate attended targets: ", time.time()-starttime)
@@ -71,10 +69,8 @@ class DetectingAttendedTargets:
 
 
     def color_array(self, img, i):
-        if self.colors == None:
-            self.colors = []
-        if len(self.colors) <= i:
-            self.colors.append((random.randint(0, 2), random.random()))
+        if i not in self.colors.keys():
+            self.colors[i] = random.randint(0, 2), random.random()
         color = self.colors[i]
         x = np.asarray(img).copy()
         x[:, :, color[0]] = (color[1] * (x[:, :, :color[0]] != 0).any(axis=2)).astype(np.uint8)

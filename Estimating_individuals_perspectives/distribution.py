@@ -4,7 +4,7 @@ import scipy.integrate as integrate
 import numpy as np
 from scipy.stats import vonmises
 import matplotlib.pyplot as plt
-
+import time
 
 class Distribution:
     def __init__(self):
@@ -12,6 +12,7 @@ class Distribution:
         self.params = []
         self.target = []
         self.results = []
+        self.distribution_time = 0
 
     def vonmises(self, angle):
         self.distribution_type = "vonmises"
@@ -31,17 +32,19 @@ class Distribution:
 
         def solve(z):
             k = z[0]
-            c1 = cdf(angle, k) - 0.9
+            c1 = vonmises.cdf(angle, k) - 0.9#cdf(angle, k) - 0.9
             return [c1]
 
         # Initit K value
         z0 = [0.001]
 
+        start_time = time.time()
         kappa = fsolve(solve, z0)[0]
         self.params = [kappa]
         if kappa < 0:
             kappa = least_squares(solve, z0, bounds=((0), (1000)))
             self.params = kappa['x']
+        self.distribution_time += time.time() - start_time
 
 
 
@@ -72,15 +75,16 @@ class Distribution:
             def cdf(angle, k):
                 return integrate.quad(lambda t: pdf(t, k), -np.pi, angle)
 
+            start_time = time.time()
             kappa = self.params[0]
             self.target = [a1, a2]
-            t1 = cdf(a1,kappa)
-            t2 = cdf(a2,kappa)
+            t1 = vonmises.cdf(a1,kappa)
+            t2 = vonmises.cdf(a2,kappa)
             self.results = [t1, t2]
-            ans = np.abs(t2[0]-t1[0])
+            ans = np.abs(t2-t1)
             if opposite:
                 ans = 1-ans
-
+            self.distribution_time += time.time() - start_time
             #print(self.results)
             #print(ans)
             return ans

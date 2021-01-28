@@ -23,13 +23,13 @@ class GazeToFieldOfVision():
     @staticmethod
     def get_probability_heatmap(image, gazes, eyes, gazes_10, gazes_90, angles):
         objects = []
-        probability_images = []
-        for i in range(len(gazes)):
-            gaze_vektor = gazes[i]
-            eye = eyes[i]
-            gaze_10 = gazes_10[i]
-            gaze_90 = gazes_90[i]
-            angle = angles[i]
+        probability_images = {}
+        for k in gazes.keys():
+            gaze_vektor = gazes[k]
+            eye = eyes[k]
+            gaze_10 = gazes_10[k]
+            gaze_90 = gazes_90[k]
+            angle = angles[k]
 
             rotate_estimate1 = GazeToFieldOfVision.rotate(angle[0], gaze_vektor)
             rotate_estimate2 = GazeToFieldOfVision.rotate(angle[1], gaze_vektor)
@@ -44,7 +44,7 @@ class GazeToFieldOfVision():
             map = GazeToFieldOfVision.get_probability_map(image.size, eye, gaze_vektor, angle_gaze_min, angle_gaze_max)
 
             objects += [real_10, real, real_90, est1, est2]
-            probability_images += [Image.fromarray(map)]
+            probability_images[k] = [Image.fromarray(map)]
 
         return objects, probability_images
 

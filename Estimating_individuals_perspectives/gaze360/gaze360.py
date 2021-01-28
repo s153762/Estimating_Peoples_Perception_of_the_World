@@ -21,7 +21,7 @@ class Gaze360:
         print('Starting Gaze360')
         WIDTH, HEIGHT = 960, 720
         self.transforms_normalize = self._get_transform()
-        self.input_images = torch.zeros(3, 7, 3, 224, 224)
+        self.input_images = {}
 
         # Model
         self.model = GazeLSTM()
@@ -30,7 +30,6 @@ class Gaze360:
         checkpoint = torch.load(model_weights, map_location=lambda storage, loc: storage)
         self.model.load_state_dict(checkpoint['state_dict'])
         self.model.eval()
-        self.image_people_count = 0
         self.gaze360_time = 0
 
     def _get_transform(self):
@@ -94,26 +93,27 @@ class Gaze360:
         return torch.cat((tensor[1:], x.unsqueeze(0)))
 
     def get_headbox(self, image, face_locations):
-        count = 0
-        input_image = self.input_images[:len(face_locations), :,:,:,:] #torch.zeros(len(face_locations), 7, 3, 224, 224) #
-        head_boxs = []
-
-        for face_location in face_locations:
+        input_images = torch.zeros(len(face_locations), 7, 3, 224, 224)
+        head_boxs = {}
+        keys = []
+        face_count = 0
+        for key, face_location in face_locations.items():
             top, right, bottom, left = face_location
-            head_boxs.append([left, top, right, bottom])
-            head = image.crop((head_boxs[count]))  # head crop
-            if self.image_people_count <= count:
+            head_boxs[key] = [left, top, right, bottom]
+            head = image.crop((head_boxs[key]))  # head crop
+            if key not in self.input_images.keys():
+                input = torch.zeros(7, 3, 224, 224)
                 for i in range(7):
-                    input_image[count, i, :, :, :] = self.transforms_normalize(head)
-                self.image_people_count += 1
-                self.input_images[count] = input_image[count]
+                    input[i] = self.transforms_normalize(head)
+                self.input_images[key] = input
             else:
-                self.input_images[count] = Gaze360.push_to_tensor(self.input_images[count],self.transforms_normalize(head))
-            #self.input_images[count, self.image_count, :, :, :] = input_image[count, self.image_count, :, :, :]
-            count += 1
+                self.input_images[key] = Gaze360.push_to_tensor(self.input_images[key],
+                                                                self.transforms_normalize(head))
+            input_images[face_count, :, :, :, :] = self.input_images[key]
+            keys.append(key)
+            face_count+=1
 
-        #self.image_count = (self.image_count + 1) % 7
-        return self.input_images[:len(face_locations)], head_boxs
+        return input_images, head_boxs.values(), keys
 
     def get_gaze(self, input_image, amount):
         # forward pass
@@ -128,12 +128,12 @@ class Gaze360:
     def get_gaze_direction(self, image, face_locations, printTime, get2D = True):
         starttime = time.time()
 
-        input_image, head_boxs = self.get_headbox(image, face_locations)
+        input_image, head_boxs, keys = self.get_headbox(image, face_locations)
         gazes, gazes_10, gazes_90 = self.get_gaze(input_image, len(face_locations))
         if get2D:
-            gazes = np.array([self.gaze_2d(gaze) for gaze in gazes])
-            gazes_10 = np.array([self.gaze_2d(gaze) for gaze in gazes_10])
-            gazes_90 = np.array([self.gaze_2d(gaze) for gaze in gazes_90])
+            gazes = {keys[i]:self.gaze_2d(gazes[i]) for i in range(len(gazes))}
+            gazes_10 = {keys[i]:self.gaze_2d(gazes_10[i]) for i in range(len(gazes))}
+            gazes_90 = {keys[i]:self.gaze_2d(gazes_90[i]) for i in range(len(gazes))}
 
         self.gaze360_time += time.time() - starttime
         if printTime:

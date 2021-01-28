@@ -11,17 +11,28 @@ class BboxInFieldOfVision:
     def set_target(self, target):
         self.target = target
 
-    def get_bbox_angles(self,povs, eyes):
+    def get_bbox_angles(self,povs_dict, eyes_dict):
+        povs = []
+        keys = []
+        eyes = []
+        for k,v in povs_dict.items():
+            povs.append(v)
+            keys.append(k)
+            eyes.append(eyes_dict[k])
+
+        eyes = np.array(eyes)
         left_corner = np.array([self.target[0] - eyes[:, 0], self.target[1] - eyes[:, 1]]).transpose()
         right_corner = np.array([self.target[2] - eyes[:, 0], self.target[1] - eyes[:, 1]]).transpose()
         # povs = BboxInFieldOfVision.makeGaze2d(povs)
 
-        angle_left = BboxInFieldOfVision.get_angle(left_corner, povs)
-        angle_right = BboxInFieldOfVision.get_angle(right_corner, povs)
+        angle_left = BboxInFieldOfVision.get_angle(left_corner, np.array(povs))
+        angle_right = BboxInFieldOfVision.get_angle(right_corner, np.array(povs))
 
         angles = np.array([angle_left, angle_right]).transpose()
+        angles_dict = {keys[i]:angles[i] for i in range(len(angles))}
         opposite = BboxInFieldOfVision.is_opposite(angles)
-        return angles, opposite
+        opposite_dict = {keys[i]: opposite[i] for i in range(len(opposite))}
+        return angles_dict, opposite_dict
 
 
     def get_bbox_Field_of_vision_angles(self, povs, eyes):
