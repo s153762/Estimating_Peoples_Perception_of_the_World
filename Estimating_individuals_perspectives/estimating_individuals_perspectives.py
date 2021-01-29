@@ -32,6 +32,7 @@ class EstimatingIndividualsPerspective:
         self.threshold = 0.25
         self.probability_within_threshold = {}
         self.save_probs = {}
+        self.only_one_person = False
         self.probability_type = 2 # 1: mean of linear distribution, 2: von mises distribution
         self.skip_initial_frames = 0
         self.people = {}
@@ -98,6 +99,10 @@ class EstimatingIndividualsPerspective:
                 cv2.cvtColor(imageShow, cv2.COLOR_BGR2RGB))
         else:
             face_locations, face_landmarks = self.get_face_locations(image_raw, True, False)
+
+        # Check if features were found
+        if len(face_locations) <= 0 or len(face_landmarks) <= 0:
+            return imageShow, {}, {}
 
         # Sort face locations so first person seen is 0, second is 1, always.
         face_ids = self.identify_faces(face_locations, face_landmarks, image)
@@ -330,15 +335,24 @@ class EstimatingIndividualsPerspective:
         return axs, canvas
 
     def identify_faces(self,face_locations,face_landmarks, image):
-            # Sort face locations so first person seen is 0, second is 1, always.
-            identified = self.add_faces(face_locations,face_landmarks, image)
-            for k in self.people.copy():
-                if k not in identified:
-                    self.people.pop(k, None)
-            return identified
+        # If no other person is expected.
+        if self.only_one_person:
+            self.people["only_one"] = [0,face_locations[0],face_landmarks[0]]
+            return ["only_one"]
+
+        # Sort face locations so first person seen is 0, second is 1, always.
+        identified = self.add_faces(face_locations,face_landmarks, image)
+        for k in self.people.copy():
+            if len(self.people[k]) < 4:
+                self.people[k].append(0)
+            else:
+                self.people[k][3]+=1
+            if k not in identified and self.people[k][3] >= 3:
+                self.people.pop(k, None)
+        return identified
 
     def add_faces(self, face_locations, face_landmarks, image):
-        identified = []
+        identified = {}
         not_identified = []
         encodings = face_recognition.face_encodings(np.array(image), known_face_locations=face_locations)
 
@@ -352,47 +366,46 @@ class EstimatingIndividualsPerspective:
                     keys_people.append(k)
             # One match
             if len(keys_people) == 1:
-                identified.append([keys_people[0], [encodings[i], face_locations[i], face_landmarks[i]]])
+                if keys_people[0] not in identified:
+                    identified[keys_people[0]] = [self.people[k][0], face_locations[i], face_landmarks[i]]
             # Multiple match
             elif len(keys_people) > 1:
-                find_best = [[k,self.people[k][1]] for k in self.people.keys() if k not in set([i[0] for i in identified])]
-                key = self.calculate_difference_locations(face_locations[i], find_best)
-                identified.append([key, [encodings[i], face_locations[i], face_landmarks[i]]])
+                find_best = {k:self.people[k][2] for k in keys_people if k not in set(identified.keys())}
+                key = self.calculate_difference_locations(face_landmarks[i], find_best)
+                if key not in identified:
+                    identified[key] = [self.people[k][0], face_locations[i], face_landmarks[i]]
             # No match
-            else:
+            if len(identified) <= i:
                 not_identified.append([encodings[i], face_locations[i], face_landmarks[i]])
 
-        identified_keys = list(set([i[0] for i in identified]))
+        identified_keys = list(set(identified.keys()))
         if len(identified_keys) == len(face_locations) and len(not_identified) == 0:
             # save results
-            for i in identified:
-                self.people[i[0]] = i[1]
+            for k,v in identified.items():
+                self.people[k] = v
             return identified_keys
 
         # see if other people might match
         for face in not_identified:
-            find_best = [[k, self.people[k][1]] for k in self.people.keys() if k not in identified_keys]
-            key = self.calculate_difference_locations(face[1], find_best)
+            find_best = {k:self.people[k][2] for k in self.people.keys() if k not in identified_keys}
+            key = self.calculate_difference_locations(face[2], find_best)
             # None are close so create new
             if key is None:
                 key = uuid.uuid4()
-                identified.append([key, face])
-                identified_keys.append(key)
-            else:
-                identified.append([key, face])
-                identified_keys.append(key)
+            identified[key] = face
+            identified_keys.append(key)
 
-        for i in identified:
-            self.people[i[0]] = i[1]
+        for k,v in identified.items():
+            self.people[k] = v
         return identified_keys
 
     def calculate_difference_locations(self, location, key_value):
-        minimum = [None,100]
-        for j in range(len(key_value)):
-            locations = key_value[j][1]
+        minimum = [None,50]
+        for k,v in key_value.items():
+            locations = key_value[k]
             diff = sum([np.abs(locations[i]-location[i]) for i in range(len(location))])
             if diff < minimum[1]:
-                minimum = [key_value[j][0], diff]
+                minimum = [k, diff]
         return minimum[0]
 
 
@@ -400,7 +413,7 @@ class EstimatingIndividualsPerspective:
 
 if __name__ == "__main__":
     directory = "../Test_data/Test3/Redigeret"
-    directory_output = "../Test_data/Test3/Results_Test3"
+    directory_output = "../Test_data/Test3/Results"
     files = os.listdir(directory)
     probs = {}
     i = 0
