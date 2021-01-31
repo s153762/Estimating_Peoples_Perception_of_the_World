@@ -13,6 +13,7 @@ class Distribution:
         self.target = []
         self.results = []
         self.distribution_time = 0
+        self.parafoveal = np.pi/6
 
     def vonmises(self, angle):
         self.distribution_type = "vonmises"
@@ -78,8 +79,10 @@ class Distribution:
             start_time = time.time()
             kappa = self.params[0]
             self.target = [a1, a2]
-            t1 = vonmises.cdf(a1,kappa)
-            t2 = vonmises.cdf(a2,kappa)
+            a_min = min(self.target)-self.parafoveal
+            a_max = max(self.target)+self.parafoveal
+            t1 = vonmises.cdf(a_min,kappa)
+            t2 = vonmises.cdf(a_max,kappa)
             self.results = [t1, t2]
             ans = np.abs(t2-t1)
             if opposite:

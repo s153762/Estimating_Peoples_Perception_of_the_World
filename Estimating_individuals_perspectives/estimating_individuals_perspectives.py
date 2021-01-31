@@ -41,7 +41,7 @@ class EstimatingIndividualsPerspective:
             self.show_detectron = True
 
         # left, top, right, bottom
-        self.target = [400, 650, 1230, 719]
+        self.target = [400, 650, 1270, 719]
         self.detectingAttendedTargets = DetectingAttendedTargets('detecting_attended_targets/model_weights/model_demo.pt', )
         self.gaze360 = Gaze360('gaze360/gaze360_model.pth.tar', )
         self.gazeToFieldOfVision = GazeToFieldOfVision(self.target)
@@ -139,107 +139,6 @@ class EstimatingIndividualsPerspective:
 
         return probs, heatmapGaze
 
-
-    def main(self, input_dir, output):
-        # Setup plots
-        axs, canvas = self.setup_plot(2)
-        if self.plot_frames:
-            plt.ion()
-        vc, ims = self.setup_init_images(input_dir, axs)
-
-        # Analyse images
-        first_run = True
-        frame_number = 0
-        while vc.isOpened():
-            image_raw, image = self.extract_new_image(vc, 2)
-
-            # If no new image, end analysis
-            if image_raw is None:
-                vc.release();
-                out.release();
-                cv2.destroyAllWindows()
-                continue;
-
-            # Extract people's features
-            imageShow, face_locations, eyes = self.extract_features(image_raw, image)
-
-            # If no faces are detected:
-            if len(face_locations) <= 0:
-                ims[0].set_data(imageShow)
-                ims[1].set_data(imageShow)
-                if self.plot_frames:
-                    plt.pause(0.0001)
-                frame_number+=1
-                continue
-
-            # Detecting Attended Targets
-            ims[1].set_data(imageShow)
-            if self.use_detecting_attention:
-                heatmaps, blended = self.plot_detecting_attended_targets(self.detectingAttendedTargets, image, face_locations)
-                ims[1].set_data(blended)
-
-            # Gaze360
-            gazes, gazes_10, gazes_90 = self.plot_gaze360(self.gaze360, image, face_locations)
-            angles_bbox, opposites = self.bboxInFieldOfVision.get_bbox_angles(gazes, eyes)
-            polygons, prob_image = GazeToFieldOfVision.get_probability_heatmap(image, gazes, eyes, gazes_10, gazes_90, angles_bbox)
-
-            # Calculating the probabilities and update self.probability_within_threshold and self.save_probs
-            probs, heatmapGaze = self.calculate_gaze360_probabilities(image, prob_image, gazes, gazes_10, gazes_90, angles_bbox, opposites, frame_number)
-            ims[0].set_data(heatmapGaze)
-
-            # Plot Probabilities
-            self.display_total_threshold(axs[0]) # average for frames
-
-            # add text per person
-            while len(probs) > len(axs[0].texts)-1:
-                axs[0].text(0, 0, 0)
-
-            # print individual text per person
-            t = 1
-            for k in probs:
-                axs[0].texts[t].set_text(str(k)[:5]+": %.2f" % probs[k]+"%")
-                axs[0].texts[t].set_y(face_locations[k][0])
-                axs[0].texts[t].set_x(face_locations[k][3])
-                t+=1
-
-            # Add polygons to gaze360 image
-            head_bbox = self.create_face_bbox(face_locations, self.probability_within_threshold)
-            polygons += head_bbox
-            # polygons += self.create_target_bbox(self.target)
-            for ply in polygons:
-                axs[0].add_patch(ply)
-            #axs[0].legend(handles=head_bbox)
-
-            if self.plot_frames:
-                plt.pause(0.0001)
-            if self.save_vid:
-                canvas.draw()
-                # https://stackoverflow.com/questions/42603161/convert-an-image-shown-in-python-into-an-opencv-image
-                # https://python.hotexamples.com/examples/matplotlib.backends.backend_agg/FigureCanvasAgg/tostring_rgb/python-figurecanvasagg-tostring_rgb-method-examples.html
-                buf = canvas.tostring_rgb()
-                if first_run:
-                    w, h = canvas.get_width_height()
-                    out = cv2.VideoWriter(output+'.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (w, h), True)
-                    first_run = False
-                figure = np.array(list(buf),'uint8').reshape(h, w, 3)
-                out.write(cv2.cvtColor(figure,cv2.COLOR_RGB2BGR))
-            if self.save_fig:
-                plt.savefig("result/frame"+str(frame_number)+".png")
-
-            if frame_number % 45 == 0:
-                print()
-            print(str(frame_number), end=", ")
-            frame_number += 1
-
-            for ply in polygons:
-                ply.remove()
-
-        # End of video
-        if self.plot_frames:
-            plt.ioff()
-        print()
-        return {str(k):v for k,v in self.save_probs.items()}, self.gaze360.gaze360_time, self.detectingAttendedTargets.detectingAttendedTargets_time, self.distribution.distribution_time
-
     def create_face_bbox(self, face_locations, can_see_target):
         polygons = []
         for k in face_locations.keys():
@@ -252,10 +151,11 @@ class EstimatingIndividualsPerspective:
         return polygons
 
     def create_target_bbox(self, target):
-        return [patches.Rectangle((target[1], target[0]),
-                              target[3] - target[1],
+        # left, top, right, bottom
+        return [patches.Rectangle((target[0], target[1]),
                               target[2] - target[0],
-                              linewidth=1, edgecolor='b', facecolor='none', label="Target")]
+                              target[3] - target[1],
+                              linewidth=0.5, edgecolor='b', facecolor='none', label="Target")]
 
     def within_threshold(self,probs):
         result = {}
@@ -343,77 +243,183 @@ class EstimatingIndividualsPerspective:
         # Sort face locations so first person seen is 0, second is 1, always.
         identified = self.add_faces(face_locations,face_landmarks, image)
         for k in self.people.copy():
-            if len(self.people[k]) < 4:
-                self.people[k].append(0)
-            else:
-                self.people[k][3]+=1
-            if k not in identified and self.people[k][3] >= 3:
-                self.people.pop(k, None)
+            if k not in identified:
+                if len(self.people[k]) < 4:
+                    self.people[k].append(0)
+                elif self.people[k][3] >= 50:
+                    self.people.pop(k, None)
+                else:
+                    self.people[k][3]+=1
         return identified
 
-    def add_faces(self, face_locations, face_landmarks, image):
+    def add_faces(self, faces, eyes, image):
         identified = {}
         not_identified = []
-        encodings = face_recognition.face_encodings(np.array(image), known_face_locations=face_locations)
+        encodings = face_recognition.face_encodings(np.array(image), known_face_locations=faces)
 
-        # For all faces
+        # For all faces check both location and recognition fits
         for i in range(len(encodings)):
             # Is the face is seen in before
-            keys_people = []
-            for k,v in self.people.items():
-                result = face_recognition.compare_faces([v[0]], encodings[i])
-                if len(result) == 1 and result[0]:
-                    keys_people.append(k)
-            # One match
-            if len(keys_people) == 1:
-                if keys_people[0] not in identified:
-                    identified[keys_people[0]] = [self.people[k][0], face_locations[i], face_landmarks[i]]
-            # Multiple match
-            elif len(keys_people) > 1:
-                find_best = {k:self.people[k][2] for k in keys_people if k not in set(identified.keys())}
-                key = self.calculate_difference_locations(face_landmarks[i], find_best)
-                if key not in identified:
-                    identified[key] = [self.people[k][0], face_locations[i], face_landmarks[i]]
-            # No match
-            if len(identified) <= i:
-                not_identified.append([encodings[i], face_locations[i], face_landmarks[i]])
+            keys_people = self.recognition_identified(encodings[i], {k:self.people[k][0] for k in self.people.keys() if k not in identified})
+            # Are any previous faces close?
+            closest_key = self.location_identified(eyes[i], faces[i], {k:self.people[k][2] for k in self.people.keys() if k not in identified})
 
-        identified_keys = list(set(identified.keys()))
-        if len(identified_keys) == len(face_locations) and len(not_identified) == 0:
+            # One or multiple matches
+            if closest_key in keys_people:
+                identified[closest_key] = [self.people[closest_key][0], faces[i], eyes[i]]
+            # No face recognition match - check second round
+            else:
+                not_identified.append([encodings[i], faces[i], eyes[i]])
+
+        identified_keys = list(identified.keys())
+        if len(identified_keys) == len(faces):
             # save results
             for k,v in identified.items():
                 self.people[k] = v
             return identified_keys
 
         # see if other people might match
-        for face in not_identified:
-            find_best = {k:self.people[k][2] for k in self.people.keys() if k not in identified_keys}
-            key = self.calculate_difference_locations(face[2], find_best)
+        for person in not_identified:
+            # check is a face was close but not a match
+            find_best_location = {k:self.people[k][2] for k in self.people.keys() if k not in identified_keys}
+            key = self.location_identified(person[2], person[1], find_best_location)
             # None are close so create new
             if key is None:
-                key = uuid.uuid4()
-            identified[key] = face
+                recognize = self.recognition_identified(encodings[i], {k:self.people[k][0] for k in self.people.keys() if k not in identified_keys})
+                if len(recognize) > 1:
+                    key = recognize[0]
+                else:
+                    key = uuid.uuid4()
+            identified[key] = person
             identified_keys.append(key)
 
         for k,v in identified.items():
             self.people[k] = v
         return identified_keys
 
-    def calculate_difference_locations(self, location, key_value):
-        minimum = [None,50]
-        for k,v in key_value.items():
-            locations = key_value[k]
-            diff = sum([np.abs(locations[i]-location[i]) for i in range(len(location))])
+    def recognition_identified(self, encoding, previous_encodings):
+        if len(previous_encodings) == 0:
+            return []
+        keys, values = zip(*previous_encodings.items())
+        result = face_recognition.compare_faces(values, encoding)
+        return np.array(keys)[result]
+
+    def location_identified(self, eye_location, face_bbox, known_previous):
+        min_movement = ((face_bbox[1] - face_bbox[3])+(face_bbox[2] - face_bbox[0]))/3
+        minimum = [None,min_movement]
+        for k,v in known_previous.items():
+            previous = known_previous[k]
+            diff = sum([np.abs(previous[i]-eye_location[i]) for i in range(len(eye_location))])
             if diff < minimum[1]:
                 minimum = [k, diff]
         return minimum[0]
 
+    def main(self, input_dir, output):
+        # Setup plots
+        axs, canvas = self.setup_plot(2)
+        if self.plot_frames:
+            plt.ion()
+        vc, ims = self.setup_init_images(input_dir, axs)
 
+        # Analyse images
+        first_run = True
+        frame_number = 0
+        while vc.isOpened():
+            image_raw, image = self.extract_new_image(vc, 2)
 
+            # If no new image, end analysis
+            if image_raw is None:
+                vc.release();
+                out.release();
+                cv2.destroyAllWindows()
+                continue;
+
+            # Extract people's features
+            imageShow, face_locations, eyes = self.extract_features(image_raw, image)
+
+            # If no faces are detected:
+            if len(face_locations) <= 0:
+                ims[0].set_data(imageShow)
+                ims[1].set_data(imageShow)
+                if self.plot_frames:
+                    plt.pause(0.0001)
+                frame_number+=1
+                continue
+
+            # Detecting Attended Targets
+            ims[1].set_data(imageShow)
+            if self.use_detecting_attention:
+                heatmaps, blended = self.plot_detecting_attended_targets(self.detectingAttendedTargets, image, face_locations)
+                ims[1].set_data(blended)
+
+            # Gaze360
+            gazes, gazes_10, gazes_90 = self.plot_gaze360(self.gaze360, image, face_locations)
+            angles_bbox, opposites = self.bboxInFieldOfVision.get_bbox_angles(gazes, eyes)
+            polygons, prob_image = GazeToFieldOfVision.get_probability_heatmap(image, gazes, eyes, gazes_10, gazes_90, angles_bbox)
+
+            # Calculating the probabilities and update self.probability_within_threshold and self.save_probs
+            probs, heatmapGaze = self.calculate_gaze360_probabilities(image, prob_image, gazes, gazes_10, gazes_90, angles_bbox, opposites, frame_number)
+            ims[0].set_data(heatmapGaze)
+
+            # Print average probabilities
+            self.display_total_threshold(axs[0]) # average for frames
+
+            # Add text per person
+            while len(probs) > len(axs[0].texts)-1:
+                axs[0].text(0, 0, 0)
+
+            # Print individual text per person
+            keys = list(probs.keys())
+            for t in range(1,len(axs[0].texts)):
+                text = ""
+                if len(keys) >= t:
+                    k = keys[t-1]
+                    text = str(k)[:5]+": %.2f" % probs[k]+"%"
+                    axs[0].texts[t].set_y(face_locations[k][0])
+                    axs[0].texts[t].set_x(face_locations[k][3])
+                axs[0].texts[t].set_text(text)
+
+            # Add polygons to gaze360 image
+            head_bbox = self.create_face_bbox(face_locations, self.probability_within_threshold)
+            polygons += head_bbox
+            polygons += self.create_target_bbox(self.target)
+            for ply in polygons:
+                axs[0].add_patch(ply)
+            #axs[0].legend(handles=head_bbox)
+
+            if self.plot_frames:
+                plt.pause(0.0001)
+            if self.save_vid:
+                # https://stackoverflow.com/questions/42603161/convert-an-image-shown-in-python-into-an-opencv-image
+                # https://python.hotexamples.com/examples/matplotlib.backends.backend_agg/FigureCanvasAgg/tostring_rgb/python-figurecanvasagg-tostring_rgb-method-examples.html
+                canvas.draw()
+                buf = canvas.tostring_rgb()
+                w, h = canvas.get_width_height()
+                if first_run:
+                    out = cv2.VideoWriter(output+'.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (w, h), True)
+                    first_run = False
+                figure = np.array(list(buf),'uint8').reshape(h, w, 3)
+                out.write(cv2.cvtColor(figure,cv2.COLOR_RGB2BGR))
+            if self.save_fig:
+                plt.savefig("result/frame"+str(frame_number)+".png")
+
+            if frame_number % 30 == 0:
+                print()
+            print(str(frame_number), end=", ")
+            frame_number += 1
+
+            for ply in polygons:
+                ply.remove()
+
+        # End of video
+        if self.plot_frames:
+            plt.ioff()
+        print()
+        return {str(k):v for k,v in self.save_probs.items()}, self.gaze360.gaze360_time, self.detectingAttendedTargets.detectingAttendedTargets_time, self.distribution.distribution_time
 
 if __name__ == "__main__":
-    directory = "../Test_data/Test3/Redigeret"
-    directory_output = "../Test_data/Test3/Results"
+    directory = "../Test_data/Test3/All"
+    directory_output = "../Test_data/Test3/Result_30"
     files = os.listdir(directory)
     probs = {}
     i = 0
