@@ -15,10 +15,12 @@ class GazeToFieldOfVision():
         self.target = target
 
     def get_probabilities(self, prob_images):
-        probs = np.array([np.asarray(image) for image in prob_images])
+        keys, values = zip(*prob_images.items())
+        probs = np.array([np.asarray(image) for image in values])
         targets = probs[:,self.target[0]:self.target[2], self.target[1]:self.target[3],3]
         mean = np.mean(targets,axis=(1,2))
-        return mean/255*100
+        prob = mean/255*100
+        return {keys[i]:prob[i] for i in range(len(keys))}
 
     @staticmethod
     def get_probability_heatmap(image, gazes, eyes, gazes_10, gazes_90, angles):
@@ -44,7 +46,7 @@ class GazeToFieldOfVision():
             map = GazeToFieldOfVision.get_probability_map(image.size, eye, gaze_vektor, angle_gaze_min, angle_gaze_max)
 
             objects += [real_10, real, real_90, est1, est2]
-            probability_images[k] = [Image.fromarray(map)]
+            probability_images[k] = Image.fromarray(map)
 
         return objects, probability_images
 

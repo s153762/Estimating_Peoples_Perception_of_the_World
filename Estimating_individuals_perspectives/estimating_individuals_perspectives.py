@@ -33,7 +33,7 @@ class EstimatingIndividualsPerspective:
         self.probability_within_threshold = {}
         self.save_probs = {}
         self.only_one_person = False
-        self.probability_type = 2 # 1: mean of linear distribution, 2: von mises distribution
+        self.probability_type = 3 # 1: mean of linear distribution, 2: von mises distribution, 3: front facing
         self.skip_initial_frames = 0
         self.people = {}
         if self.use_detectron2:
@@ -111,14 +111,14 @@ class EstimatingIndividualsPerspective:
         return imageShow, face_locations, eyes
 
 
-    def calculate_gaze360_probabilities(self, imageShow, prob_image, gazes, gazes_10, gazes_90, angles_bbox, opposites, frame_number):
+    def calculate_gaze360_probabilities(self, imageShow, prob_image, gazes, gazes_10, gazes_90, angles_bbox, opposites, face_locations, frame_number):
         probs = {}
         heatmapGaze = imageShow.convert("RGBA")
         if self.probability_type == 1:
             probs = self.gazeToFieldOfVision.get_probabilities(prob_image)
             # showing Probability image
             for image in prob_image:
-                heatmapGaze = Image.alpha_composite(heatmapGaze, image.convert("RGBA"))
+                heatmapGaze = Image.alpha_composite(heatmapGaze, prob_image[image].convert("RGBA"))
 
         elif self.probability_type == 2:
             for k in gazes.keys():
@@ -127,6 +127,14 @@ class EstimatingIndividualsPerspective:
                 self.distribution.vonmises(error_angle)
                 probs[k] = self.distribution.target_probability(angles_bbox[k][0], angles_bbox[k][1], opposites[k])
                 # self.distribution.plot()
+
+        elif self.probability_type == 3:
+            for k in gazes.keys():
+                # left, top, right, bottom
+                head = imageShow.crop((face_locations[k][3],face_locations[k][0],face_locations[k][1],face_locations[k][2]))
+                head = np.asarray(head)
+                location = face_recognition.face_landmarks(head)
+                probs[k] = 1 if len(location) >= 1 else 0
 
         # Update saved probabilities
         can_see_target = self.within_threshold(probs)
@@ -358,7 +366,7 @@ class EstimatingIndividualsPerspective:
             polygons, prob_image = GazeToFieldOfVision.get_probability_heatmap(image, gazes, eyes, gazes_10, gazes_90, angles_bbox)
 
             # Calculating the probabilities and update self.probability_within_threshold and self.save_probs
-            probs, heatmapGaze = self.calculate_gaze360_probabilities(image, prob_image, gazes, gazes_10, gazes_90, angles_bbox, opposites, frame_number)
+            probs, heatmapGaze = self.calculate_gaze360_probabilities(image, prob_image, gazes, gazes_10, gazes_90, angles_bbox, opposites, face_locations, frame_number)
             ims[0].set_data(heatmapGaze)
 
             # Print average probabilities
@@ -418,8 +426,8 @@ class EstimatingIndividualsPerspective:
         return {str(k):v for k,v in self.save_probs.items()}, self.gaze360.gaze360_time, self.detectingAttendedTargets.detectingAttendedTargets_time, self.distribution.distribution_time
 
 if __name__ == "__main__":
-    directory = "../Test_data/Test3/All"
-    directory_output = "../Test_data/Test3/Result_30"
+    directory = "../Test_data/Test1_Test2/Opdelt"
+    directory_output = "../Test_data/Test1_Test2/Opdelt_face_Result"
     files = os.listdir(directory)
     probs = {}
     i = 0

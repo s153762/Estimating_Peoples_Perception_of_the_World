@@ -2,12 +2,17 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+from scipy.stats import mannwhitneyu
 
 class AnalyseData:
     def __init__(self):
         sns.set_theme(style="ticks", font_scale=1.2)
-        self.directory = "../../Test_data/Resultat_test1_test2/Results_hele_klip/results_test1_test2.json"
-        self.directory_divided = "../../Test_data/Resultat_test1_test2/opdelt_med_30/results_test1_test2.json"#"../../Test_data/Resultat_Opdelt_test1_test2/results_test1_test2.json"
+        self.directory = "../../Test_data/Test1_Test2/Results_hele_klip/results_test1_test2.json"
+        self.directory_divided = "../../Test_data/Test1_Test2/Opdelt_30_Result/results_test1_test2.json"
+        self.dir_results = ["face", "avg", "first", "30"]
+        self.dir_input = ["Opdelt_face_Result", "Opdelt_avg_Result", "Opdelt_Result", "Opdelt_30_Result"]
+        self.methods = ["1", "2", "3", "3a"]
+        self.folder = ["face", "avg", "first", "30"]
 
     def main(self):
         #data = self.get_data()
@@ -26,24 +31,37 @@ class AnalyseData:
         #plt.savefig("../result/violin.png")
 
         data_divided = self.get_data_dir(self.directory_divided)
+
         _, keys1 = self.get_orientation_keys_data(data_divided, "test1")
-        self.plot_violinplot_orientation(data_divided, keys1, [2,2], ["","Right","Front","Left"])
-        plt.savefig("../result/violin_test1_30.png")
+        #self.plot_violinplot_orientation(data_divided, keys1, [2,2], ["","Right","Front","Left"], "All")
+        #plt.savefig("../result/face/violin_test1.png")
 
         _, keys2 = self.get_orientation_keys_data(data_divided, "test2")
-        self.plot_violinplot_orientation(data_divided, keys2, [2,2],["Back","Right","Front","Left"])
-        plt.savefig("../result/violin_test2_30.png")
+        #self.plot_violinplot_orientation(data_divided, keys2, [2,2],["Back","Right","Front","Left"], "All")
+        #plt.savefig("../result/face/violin_test2.png")
 
-        self.plot_violinplot_orientation(data_divided, [keys1[1], keys2[1]] , [2,2],["Test 1: Right","Test2: Right"])
-        plt.savefig("../result/violin_right_30.png")
-        self.plot_violinplot_orientation(data_divided, [keys1[2], keys2[2]], [2, 2], ["Test 1: Front", "Test2: Front"])
-        plt.savefig("../result/violin_front_30.png")
-        self.plot_violinplot_orientation(data_divided, [keys1[3], keys2[3]], [2, 2], ["Test 1: Left", "Test2: Left"])
-        plt.savefig("../result/violin_left_30.png")
-        plt.show()
+        #self.plot_violinplot_orientation(data_divided, [keys1[1], keys2[1]] , [1,2],["Test 1","Test 2"], "Right")
+        #plt.savefig("../result/first/violin_right.png")
+        #self.plot_violinplot_orientation(data_divided, [keys1[2], keys2[2]], [1, 2], ["Test 1", "Test 2"], "Front")
+        #plt.savefig("../result/first/violin_front.png")
+        #self.plot_violinplot_orientation(data_divided, [keys1[3], keys2[3]], [1, 2], ["Test 1", "Test 2"], "Left")
+        self.plot_violinplot_orientation(data_divided, [keys2[0]], [1, 1], ["Test 2"], "Back")
+        plt.savefig("../result/30/violin_back.png")
+        #plt.savefig("../result/first/violin_left.png")
+        #plt.show()
 
-        self.plot_violinplot_all(data_divided, [self.flatten(keys1), self.flatten(keys2)])
-        plt.savefig("../result/violin_combined_30.png")
+
+        for i in range(len(self.dir_results)):
+            dir = "../../Test_data/Test1_Test2/" + self.dir_input[i] + "/results_test1_test2.json"
+            data_divided = self.get_data_dir(dir)
+
+            _, keys1 = self.get_orientation_keys_data(data_divided, "test1")
+            _, keys2 = self.get_orientation_keys_data(data_divided, "test2", False)
+            self.plot_violinplot_all(data_divided, [self.flatten(keys1), self.flatten(keys2)], self.folder[i], self.methods[i])
+
+            time, parts = self.get_time_keys_data(data_divided)
+            self.plot_violinplot_time(data_divided, time, parts, self.methods[i])
+            plt.show()
 
     def get_data(self):
         with open(self.directory) as f:
@@ -62,13 +80,20 @@ class AnalyseData:
         test1_keyes = [k for k in data.keys() if "time" not in k and "Test2" not in k]
         return time_keyes, test1_keyes, test2_keyes
 
-    def get_orientation_keys_data(self, data, test):
+    def get_orientation_keys_data(self, data, test, with_back = True):
         time_keyes = [k for k in data.keys() if "time" in k and test in k]
-        back = [k for k in data.keys() if "time" not in k and test in k and "back" in k]
+        back = [k for k in data.keys() if "time" not in k and test in k and "back" in k] if with_back else []
         right = [k for k in data.keys() if "time" not in k and test in k and "right" in k]
         front = [k for k in data.keys() if "time" not in k and test in k and "front" in k]
         left = [k for k in data.keys() if "time" not in k and test in k and "left" in k]
         return time_keyes, [back, right, front, left]
+
+    def get_time_keys_data(self, data):
+        gaze = [k for k in data.keys() if "time" in k and "gaze360" in k]
+        detecting = [k for k in data.keys() if "time" in k and "detectingAttendedTargets" in k]
+        distribution = [k for k in data.keys() if "time" in k and "distribution" in k]
+        time_keyes = [k for k in data.keys() if "-time" in k]
+        return time_keyes, [gaze, detecting, distribution]
 
     def get_data_from_keys(self, data,keys):
         filtered_data = [(k,self.flatten(data[k]))for k in keys if k in data and "0-2" not in k]
@@ -165,15 +190,18 @@ class AnalyseData:
         ax2.set_title("Test 2")
 
         #plt.show()
+        # general info
 
 
-    def plot_violinplot_orientation(self, data, keys, ax_num, titles):
-        fig, axs = plt.subplots(ax_num[0], ax_num[1], figsize=(15, 10))
+
+    def plot_violinplot_orientation(self, data, keys, ax_num, titles, overall_title):
+        size = (15, 10) if ax_num[0] > 1 else (17, 5)
+        fig, axs = plt.subplots(ax_num[0], ax_num[1], figsize=size)
         i = 0
         j = 0
         for k in keys:
             data1 = self.get_data_values_divided(data, k )
-            ax = axs[j,i%2]
+            ax = axs[i] if ax_num[0] == 1 and ax_num[1] == 2 else axs if ax_num[0] == 1 else axs[j,i%2]
             if len(data1) == 0:
                 i += 1
                 j = j + 1 if i % 2 == 0 else j
@@ -186,20 +214,81 @@ class AnalyseData:
             ax.set_title(titles[i])
             i += 1
             j = j + 1 if i % 2 == 0 else j
-
+        fig.suptitle("Method 3a: "+overall_title)
         #plt.show()
 
     def flatten_dict(self, values):
         return self.flatten([values[k] for k in values])
 
-    def plot_violinplot_all(self, data, keys):
+    def plot_violinplot_all(self, data, keys, name, m_name, save=True):
+        plt.show()
         plt.Figure(figsize=(6,6))
         data1 = self.flatten_dict(self.get_data_values_divided(data, keys[0]))
         data2 = self.flatten_dict(self.get_data_values_divided(data, keys[1]))
         plt.violinplot([data1, data2])
         plt.xticks(range(1, 3), ["Test 1", "Test 2"])
-        #plt.show()
+        plt.title("Method "+m_name)
+        plt.ylabel("Probability Estimation")
+        if save:
+            plt.savefig("../result/" + name + "/violin_combined.png")
 
+        print("----" + "Time for Method " + name)
+
+        print(len(data1))
+        print(np.mean(data1))
+        print(np.median(data1))
+        print(np.min(data1))
+        print(np.max(data1))
+        print("data2")
+        print(len(data2))
+        print(np.mean(data2))
+        print(np.median(data2))
+        print(np.min(data2))
+        print(np.max(data2))
+        print(np.sum(data1), np.sum(data2))
+        data1 = np.array(data1)
+        data2 = np.array(data2)
+        print(len(data1[data1 > 0.5]), len(data2[data2 > 0.5]))
+        stat, p = mannwhitneyu(data1, data2)
+        print('Statistics=%.3f, p=%.3f' % (stat, p))
+        alpha = 0.05
+        if p > alpha:
+            print('Same distribution (fail to reject H0)')
+        else:
+            print('Different distribution (reject H0)')
+
+    def plot_violinplot_time(self, data, time, parts, name, save=True):
+        plt.show()
+        fig, axs = plt.subplots(1, 2, figsize=(8,5))
+        data_time = [data[k] for k in time]
+        axs[0].violinplot(data_time)
+        axs[0].set_xticks(range(1, 2))
+        axs[0].set_xticklabels(["Time"])
+        axs[0].set_ylabel("Time in secunds")
+        if save:
+            plt.savefig("../result/time/m"+name+".png")
+
+        #plt.show()
+        plt.Figure(figsize=(6, 6))
+        data1 = [data[k] for k in parts[0]]
+        #data2 = [data[k] for k in parts[1]]
+        data3 = [data[k] for k in parts[2]]
+        axs[1].violinplot([data1, data3])
+        axs[1].set_xticks(range(1, 3))
+        axs[1].set_xticklabels(["Gaze360", "Distribution"])
+        fig.suptitle("Time for Method " + name)
+        if save:
+            plt.savefig("../result/time/m"+name+"_divided.png")
+        plt.show()
+
+        print("----"+"Time for Method "+name)
+        for d in [data_time, data1, data3]:
+            print("new")
+            print(len(d))
+            print(np.mean(d))
+            print(np.median(d))
+            print(np.min(d))
+            print(np.max(d))
 
 if __name__ == "__main__":
     AnalyseData().main()

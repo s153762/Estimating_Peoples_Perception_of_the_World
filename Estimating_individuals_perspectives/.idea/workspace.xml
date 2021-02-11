@@ -4,12 +4,25 @@
     <list default="true" id="92362fdf-3065-493c-bf6f-0d6036ac5745" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Analyse_data/analyse_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/Analyse_data/analyse_data.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/distribution.py" beforeDir="false" afterPath="$PROJECT_DIR$/distribution.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/estimating_individuals_perspectives.py" beforeDir="false" afterPath="$PROJECT_DIR$/estimating_individuals_perspectives.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/result/average.png" beforeDir="false" afterPath="$PROJECT_DIR$/result/average.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/result/test1.png" beforeDir="false" afterPath="$PROJECT_DIR$/result/test1.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/result/test1_test2.png" beforeDir="false" afterPath="$PROJECT_DIR$/result/test1_test2.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/result/test2.png" beforeDir="false" afterPath="$PROJECT_DIR$/result/test2.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gaze_field_of_vision.py" beforeDir="false" afterPath="$PROJECT_DIR$/gaze_field_of_vision.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/average.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/test1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/test1_test2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/test2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/violin.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/violin_combined.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/violin_combined_30.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/violin_front.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/violin_front_30.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/violin_left.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/violin_left_30.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/violin_right.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/violin_right_30.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/violin_test1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/violin_test1_30.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/violin_test2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/result/violin_test2_30.png" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -102,7 +115,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.Estimating_individuals_perspectives">
+  <component name="RunManager" selected="Python.analyse_data">
     <configuration name="Estimating_individuals_perspectives" type="PythonConfigurationType" factoryName="Python">
       <module name="Estimating_individuals_perspectives" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -229,7 +242,10 @@
       <workItem from="1611299615325" duration="627000" />
       <workItem from="1611300256251" duration="4004000" />
       <workItem from="1611305213151" duration="2217000" />
-      <workItem from="1611307627203" duration="155995000" />
+      <workItem from="1611307627203" duration="156045000" />
+      <workItem from="1612128972645" duration="781000" />
+      <workItem from="1612255977072" duration="10209000" />
+      <workItem from="1612446406192" duration="16300000" />
     </task>
     <servers />
   </component>
@@ -285,18 +301,13 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Analyse_data/analyse_data.py</url>
-          <line>197</line>
-          <option name="timeStamp" value="501" />
+          <line>161</line>
+          <option name="timeStamp" value="517" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Analyse_data/analyse_data.py</url>
-          <line>192</line>
-          <option name="timeStamp" value="502" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/estimating_individuals_perspectives.py</url>
-          <line>271</line>
-          <option name="timeStamp" value="528" />
+          <line>251</line>
+          <option name="timeStamp" value="524" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
@@ -309,8 +320,8 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Estimating_individuals_perspectives$analyse_data.coverage" NAME="analyse_data Coverage Results" MODIFIED="1612004025423" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Analyse_data" />
-    <SUITE FILE_PATH="coverage/Estimating_individuals_perspectives$Estimating_individuals_perspectives.coverage" NAME="Estimating_individuals_perspectives Coverage Results" MODIFIED="1612006493128" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Estimating_individuals_perspectives$analyse_data.coverage" NAME="analyse_data Coverage Results" MODIFIED="1612889728874" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Analyse_data" />
+    <SUITE FILE_PATH="coverage/Estimating_individuals_perspectives$Estimating_individuals_perspectives.coverage" NAME="Estimating_individuals_perspectives Coverage Results" MODIFIED="1612283533183" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/estimating_individuals_perspectives$Estimating_individuals_perspectives.coverage" NAME="Estimating_individuals_perspectives Coverage Results" MODIFIED="1602164867621" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Estimating_individuals_perspectives$apply_net.coverage" NAME="apply_net Coverage Results" MODIFIED="1607090334670" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/detectron/DensePose" />
     <SUITE FILE_PATH="coverage/Estimating_individuals_perspectives$distribution.coverage" NAME="distribution Coverage Results" MODIFIED="1611250120117" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
