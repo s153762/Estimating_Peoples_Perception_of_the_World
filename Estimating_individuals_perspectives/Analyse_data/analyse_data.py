@@ -7,7 +7,7 @@ from scipy.stats import mannwhitneyu
 class AnalyseData:
     def __init__(self):
         sns.set_theme(style="ticks", font_scale=1.2)
-        self.directory = "../../Test_data/Test1_Test2/Results_hele_klip/results_test1_test2.json"
+        self.directory = "../../Test_data/Test1_Test2/Hele_Result/results_test1_test2.json"
         self.directory_divided = "../../Test_data/Test1_Test2/Opdelt_30_Result/results_test1_test2.json"
         self.dir_results = ["face", "avg", "first", "30"]
         self.dir_input = ["Opdelt_face_Result", "Opdelt_avg_Result", "Opdelt_Result", "Opdelt_30_Result"]
@@ -15,42 +15,16 @@ class AnalyseData:
         self.folder = ["face", "avg", "first", "30"]
 
     def main(self):
-        #data = self.get_data()
-        #_, test1, test2 = self.get_condition_keys_data(data)
+        # plot based on full videos using original results
+        data = self.get_data()
+        _, test1, test2 = self.get_condition_keys_data(data)
+        self.plot_test(data,test1,"Test 1", "../result/test1.png", save_plot=True)
+        self.plot_test(data,test2,"Test 2", "../result/test2.png", save_plot=True)
+        self.plot_test(data, test1+test2, "Test 1 and Test 2", "../result/test1_test2.png", save_plot=True)
+        self.plot_average_both(data, test1, test2, "../result/average.png", save_plot=True)
+        self.plot_violinplot(data, test1, test2,"../result/violin.png", save_plot=True)
 
-        #self.plot_test(data,test1,"Test 1")
-        #plt.savefig("../result/test1.png")
-        #self.plot_test(data,test2,"Test 2")
-        #plt.savefig("../result/test2.png")
-        #self.plot_test(data, test1+test2, "Test 1 and Test 2")
-        #plt.savefig("../result/test1_test2.png")
-        #self.plot_average_both(data, test1, test2)
-        #plt.savefig("../result/average.png")
-
-        #self.plot_violinplot(data, test1, test2)
-        #plt.savefig("../result/violin.png")
-
-        data_divided = self.get_data_dir(self.directory_divided)
-
-        _, keys1 = self.get_orientation_keys_data(data_divided, "test1")
-        #self.plot_violinplot_orientation(data_divided, keys1, [2,2], ["","Right","Front","Left"], "All")
-        #plt.savefig("../result/face/violin_test1.png")
-
-        _, keys2 = self.get_orientation_keys_data(data_divided, "test2")
-        #self.plot_violinplot_orientation(data_divided, keys2, [2,2],["Back","Right","Front","Left"], "All")
-        #plt.savefig("../result/face/violin_test2.png")
-
-        #self.plot_violinplot_orientation(data_divided, [keys1[1], keys2[1]] , [1,2],["Test 1","Test 2"], "Right")
-        #plt.savefig("../result/first/violin_right.png")
-        #self.plot_violinplot_orientation(data_divided, [keys1[2], keys2[2]], [1, 2], ["Test 1", "Test 2"], "Front")
-        #plt.savefig("../result/first/violin_front.png")
-        #self.plot_violinplot_orientation(data_divided, [keys1[3], keys2[3]], [1, 2], ["Test 1", "Test 2"], "Left")
-        self.plot_violinplot_orientation(data_divided, [keys2[0]], [1, 1], ["Test 2"], "Back")
-        plt.savefig("../result/30/violin_back.png")
-        #plt.savefig("../result/first/violin_left.png")
-        #plt.show()
-
-
+        # plot all methods (new results)
         for i in range(len(self.dir_results)):
             dir = "../../Test_data/Test1_Test2/" + self.dir_input[i] + "/results_test1_test2.json"
             data_divided = self.get_data_dir(dir)
@@ -58,6 +32,11 @@ class AnalyseData:
             _, keys1 = self.get_orientation_keys_data(data_divided, "test1")
             _, keys2 = self.get_orientation_keys_data(data_divided, "test2", False)
             self.plot_violinplot_all(data_divided, [self.flatten(keys1), self.flatten(keys2)], self.folder[i], self.methods[i])
+            self.plot_violinplot_orientation(data_divided, [keys1[1], keys2[1]], [1, 2], ["Test 1", "Test 2"], "Right", self.folder[i], True)
+            self.plot_violinplot_orientation(data_divided, [keys1[2], keys2[2]], [1, 2], ["Test 1", "Test 2"], "Front", self.folder[i], True)
+            self.plot_violinplot_orientation(data_divided, [keys1[3], keys2[3]], [1, 2], ["Test 1", "Test 2"], "Left", self.folder[i], True)
+            _, keys2 = self.get_orientation_keys_data(data_divided, "test2", True)
+            self.plot_violinplot_orientation(data_divided, [keys2[0]], [1, 1], ["Test 2"], "Back", self.folder[i], True)
 
             time, parts = self.get_time_keys_data(data_divided)
             self.plot_violinplot_time(data_divided, time, parts, self.methods[i])
@@ -102,7 +81,7 @@ class AnalyseData:
     def flatten(self, data):
         return [ p for f in data for p in f]
 
-    def plot_test(self, data, keys, title):
+    def plot_test(self, data, keys, title, save_title, save_plot=False):
         filtered_data = self.get_data_from_keys(data, keys)
         plt.figure(figsize=(10,6))
         for data_type in filtered_data:
@@ -120,7 +99,9 @@ class AnalyseData:
         plt.legend()
         plt.xlabel("Frames")
         plt.ylabel("Cumulative Probability")
-        #plt.show()
+        if save_plot:
+            plt.savefig(save_title)
+        plt.show()
 
     def get_average_data(self, data, keys):
         filtered_data = [[k, self.average(data[k])] for k in keys if k in data and "0-2" not in k]
@@ -130,7 +111,7 @@ class AnalyseData:
         flatten = self.flatten(data)
         return sum(flatten)/len(flatten)
 
-    def plot_average_both(self, data, keys1, keys2):
+    def plot_average_both(self, data, keys1, keys2, save_title, save_plot=False):
         plt.figure(figsize=(8, 6))
 
         # Test 1
@@ -155,7 +136,9 @@ class AnalyseData:
         plt.ylim([0,0.7])
         plt.ylabel("Average Probability")
         plt.legend()
-        #plt.show()
+        if save_plot:
+            plt.savefig(save_title)
+        plt.show()
 
     def get_data_values(self,data, keys):
         filtered_data = {k:self.flatten(data[k]) for k in keys if k in data and "0-2" not in k and "Sade" not in k and "Jonas" not in k}
@@ -168,7 +151,7 @@ class AnalyseData:
     def flatten_divided(self, values):
         return [p['probs'] for f in values for p in values[f]]
 
-    def plot_violinplot(self, data, keys1, keys2):
+    def plot_violinplot(self, data, keys1, keys2, save_title, save_plot=False):
         fig, (ax1, ax2) = plt.subplots(1, 2,figsize=(10, 5))
 
         # Test 1
@@ -188,14 +171,12 @@ class AnalyseData:
         for i, label in enumerate(labels2):
             label.set_y(label.get_position()[1] - (i % 2) * 0.075)
         ax2.set_title("Test 2")
+        if save_plot:
+            plt.savefig(save_title)
+        plt.show()
 
-        #plt.show()
-        # general info
-
-
-
-    def plot_violinplot_orientation(self, data, keys, ax_num, titles, overall_title):
-        size = (15, 10) if ax_num[0] > 1 else (17, 5)
+    def plot_violinplot_orientation(self, data, keys, ax_num, titles, overall_title, save_title, save_plot):
+        size = (15, 10) if ax_num[0] > 1 else (17, 5) if overall_title != "Back" else (8, 5)
         fig, axs = plt.subplots(ax_num[0], ax_num[1], figsize=size)
         i = 0
         j = 0
@@ -208,14 +189,17 @@ class AnalyseData:
                 continue
             ax.violinplot(data1.values())
             ax.set_xticks(range(1, len(data1) + 1))
-            labels1 = ax.set_xticklabels([s[:-11] for s in data1.keys()])
+            labels1 = ax.set_xticklabels([s[:-11].replace("_"," ") for s in data1.keys()])
             for l, label in enumerate(labels1):
                 label.set_y(label.get_position()[1] - (l % 2) * 0.075)
             ax.set_title(titles[i])
+            ax.set_ylabel("Estimated Probability")
             i += 1
             j = j + 1 if i % 2 == 0 else j
         fig.suptitle("Method 3a: "+overall_title)
-        #plt.show()
+        if save_plot:
+            plt.savefig("../result/"+save_title+"/violin_"+overall_title+".png")
+        plt.show()
 
     def flatten_dict(self, values):
         return self.flatten([values[k] for k in values])
@@ -228,31 +212,24 @@ class AnalyseData:
         plt.violinplot([data1, data2])
         plt.xticks(range(1, 3), ["Test 1", "Test 2"])
         plt.title("Method "+m_name)
-        plt.ylabel("Probability Estimation")
+        plt.ylabel("Estimated Probability")
         if save:
             plt.savefig("../result/" + name + "/violin_combined.png")
 
-        print("----" + "Time for Method " + name)
 
-        print(len(data1))
-        print(np.mean(data1))
-        print(np.median(data1))
-        print(np.min(data1))
-        print(np.max(data1))
-        print("data2")
-        print(len(data2))
-        print(np.mean(data2))
-        print(np.median(data2))
-        print(np.min(data2))
-        print(np.max(data2))
-        print(np.sum(data1), np.sum(data2))
+        data_all = [data1,data2]
+        for i in range(2):
+            print("---- Test"+str(i+1)+" ----")
+            print("number of elements "+str(len(data_all[i])))
+            print("mean: "+str(np.mean(data_all[i]))+", median: "+str(np.median(data_all[i])))
+            print("min: "+str(np.min(data_all[i]))+", max: "+str(np.max(data_all[i])))
         data1 = np.array(data1)
         data2 = np.array(data2)
-        print(len(data1[data1 > 0.5]), len(data2[data2 > 0.5]))
+        print("number of test 1 over 0.5: "+str(len(data1[data1 > 0.5])),
+              "number of test 2 over 0.5: "+str(len(data2[data2 > 0.5])))
         stat, p = mannwhitneyu(data1, data2)
         print('Statistics=%.3f, p=%.3f' % (stat, p))
-        alpha = 0.05
-        if p > alpha:
+        if p > 0.05:
             print('Same distribution (fail to reject H0)')
         else:
             print('Different distribution (reject H0)')
@@ -267,8 +244,8 @@ class AnalyseData:
         axs[0].set_ylabel("Time in secunds")
         if save:
             plt.savefig("../result/time/m"+name+".png")
+        plt.show()
 
-        #plt.show()
         plt.Figure(figsize=(6, 6))
         data1 = [data[k] for k in parts[0]]
         #data2 = [data[k] for k in parts[1]]
@@ -283,12 +260,10 @@ class AnalyseData:
 
         print("----"+"Time for Method "+name)
         for d in [data_time, data1, data3]:
-            print("new")
-            print(len(d))
-            print(np.mean(d))
-            print(np.median(d))
-            print(np.min(d))
-            print(np.max(d))
+            print("---- next ----")
+            print("number of elements "+str(len(d)))
+            print("mean: "+str(np.mean(d))+", median: "+str(np.median(d)))
+            print("min: "+str(np.min(d))+", max: "+str(np.max(d)))
 
 if __name__ == "__main__":
     AnalyseData().main()
