@@ -49,7 +49,7 @@ class Distribution:
 
 
 
-    def plot(self):
+    def plot(self, output, frame_number):
         if(self.distribution_type=="vonmises"):
             kappa = self.params[0]
             fig, ax = plt.subplots(1, 1)
@@ -61,6 +61,9 @@ class Distribution:
             if self.target is not []:
                 for target in self.target:
                     ax.axvline(x=target, label='line at x = {}'.format(target))
+            plt.xlabel("Angles (Degrees)")
+            plt.ylabel("Estimated Probability")
+            plt.title("Method 3a Distribution")
             plt.show()
 
     def target_probability(self, a1, a2, opposite=False):

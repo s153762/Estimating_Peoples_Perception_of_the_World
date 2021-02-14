@@ -25,20 +25,21 @@ class EstimatingIndividualsPerspective:
         # initialize
         self.use_webcam = False
         self.use_detectron2 = True
-        self.use_detecting_attention = False
+        self.use_detecting_attention = True
         self.save_fig = False
         self.save_vid = True
         self.plot_frames = False
-        self.threshold = 0.25
+        self.threshold = 0.5
         self.probability_within_threshold = {}
         self.save_probs = {}
         self.only_one_person = False
-        self.probability_type = 3 # 1: mean of linear distribution, 2: von mises distribution, 3: front facing
+        self.probability_type = 2 # 1: mean of linear distribution, 2: von mises distribution, 3: front facing
         self.skip_initial_frames = 0
         self.people = {}
+        self.output_dir = ""
         if self.use_detectron2:
             self.detectron2 = Detectron2Keypoints()
-            self.show_detectron = True
+            self.show_detectron = False
 
         # left, top, right, bottom
         self.target = [400, 650, 1270, 719]
@@ -126,7 +127,7 @@ class EstimatingIndividualsPerspective:
                 error_angle = max(angle_gaze_min, angle_gaze_max)
                 self.distribution.vonmises(error_angle)
                 probs[k] = self.distribution.target_probability(angles_bbox[k][0], angles_bbox[k][1], opposites[k])
-                # self.distribution.plot()
+                #self.distribution.plot(self.output_dir, frame_number)
 
         elif self.probability_type == 3:
             for k in gazes.keys():
@@ -324,6 +325,7 @@ class EstimatingIndividualsPerspective:
 
     def main(self, input_dir, output):
         # Setup plots
+        self.output_dir = output
         axs, canvas = self.setup_plot(2)
         if self.plot_frames:
             plt.ion()
@@ -426,8 +428,8 @@ class EstimatingIndividualsPerspective:
         return {str(k):v for k,v in self.save_probs.items()}, self.gaze360.gaze360_time, self.detectingAttendedTargets.detectingAttendedTargets_time, self.distribution.distribution_time
 
 if __name__ == "__main__":
-    directory = "../Test_data/Test1_Test2/Opdelt"
-    directory_output = "../Test_data/Test1_Test2/Opdelt_face_Result"
+    directory = "../Test_data/Test3/All"
+    directory_output = "../Test_data/Test3/DAVTV"
     files = os.listdir(directory)
     probs = {}
     i = 0
@@ -447,7 +449,7 @@ if __name__ == "__main__":
         print("Time taken to estimate perception: ", probs[os.path.splitext(file)[0]+"-time"])
         i += 1
 
-        with open(directory_output+'/results_test1_test2.json', 'w') as fp:
+        with open(directory_output+'/results_test3.json', 'w') as fp:
             json.dump(probs, fp, indent=4)
 
     # ../../TrainingSet/TwoPersons.m4v');
