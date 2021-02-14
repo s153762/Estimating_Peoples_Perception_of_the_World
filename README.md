@@ -15,6 +15,8 @@ The directory where the videos are located can be added in the main function.
 
 To analyse the results, run the *Analyse_data/analyse_data.py* and ensure that the input directory is equal to the output from *estimating_individuals_perspectives.py*. 
 
+*The code need some refactoring to be more easily understood, but this has not been done due to time constraints.*
+
 ## Test Data and Results
 The raw videos and estimated results can be found in *Test_Data_Result*
 All videos are compressed into zip files. 
