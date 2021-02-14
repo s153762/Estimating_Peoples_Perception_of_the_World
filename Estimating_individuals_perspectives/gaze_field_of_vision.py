@@ -4,6 +4,7 @@ import math
 from PIL import Image
 from matplotlib.path import Path
 
+# This class implements method 2.
 class GazeToFieldOfVision():
 
     def __init__(self, target):
@@ -62,20 +63,12 @@ class GazeToFieldOfVision():
 
     @staticmethod
     def get_min_max_angles(gaze, gaze_min, gaze_max, get_clockwise = False):
-        #if len(gaze) == 3:
-        #    gaze = Gaze360.makeGaze2d(gaze)
-        #if len(gaze_min) == 3:
-        #    gaze_min = Gaze360.makeGaze2d(gaze_min)
-        #    gaze_max = Gaze360.makeGaze2d(gaze_max)
-        #gaze_min = GazeToFieldOfVision.swap(gaze_min)
-        #gaze_max = GazeToFieldOfVision.swap(gaze_max)
-        angle_gaze_min = GazeToFieldOfVision.get_angle(gaze_min, gaze,get_clockwise)  # np.arccos(np.dot(unit_gaze_min, unit_gaze))
-        angle_gaze_max = GazeToFieldOfVision.get_angle(gaze_max, gaze,get_clockwise)  # np.arccos(np.dot(unit_gaze_max, unit_gaze))
+        angle_gaze_min = GazeToFieldOfVision.get_angle(gaze_min, gaze,get_clockwise)
+        angle_gaze_max = GazeToFieldOfVision.get_angle(gaze_max, gaze,get_clockwise)
         return angle_gaze_min, angle_gaze_max
 
     @staticmethod
     def rotate(theta, gaze):
-        #rotated = np.array([np.cos(theta)*gaze[0]-np.sin(theta)*gaze[1], np.sin(theta)*gaze[0]+np.cos(theta)*gaze[1]])
         r = np.array(((np.cos(theta), -np.sin(theta)),
                       (np.sin(theta), np.cos(theta))))
         rotated = r.dot(np.array(gaze))

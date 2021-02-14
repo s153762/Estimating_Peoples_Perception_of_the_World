@@ -4,6 +4,7 @@ import numpy as np
 import seaborn as sns
 from scipy.stats import mannwhitneyu
 
+# analyses the results from estimating_idividuals_perspectives.py
 class AnalyseData:
     def __init__(self):
         sns.set_theme(style="ticks", font_scale=1.2)

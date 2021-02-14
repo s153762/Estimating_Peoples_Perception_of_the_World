@@ -10,7 +10,6 @@ import face_recognition
 import time
 import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg
-import uuid
 
 from detecting_attended_targets.detecting_attended_targets import DetectingAttendedTargets
 from gaze360.gaze360 import Gaze360
@@ -18,7 +17,9 @@ from gaze_field_of_vision import GazeToFieldOfVision
 from detectron.detecron2_keypoint import Detectron2Keypoints
 from bbox_in_field_of_vision import BboxInFieldOfVision
 from distribution import Distribution
+from identify_people import IdentifyPeople
 
+# The main class
 class EstimatingIndividualsPerspective:
     def __init__(self):
         # initialize
@@ -34,7 +35,7 @@ class EstimatingIndividualsPerspective:
         self.only_one_person = False
         self.probability_type = 3 # 1: front facing, 2: mean of linear distribution, 3: von mises distribution,
         self.skip_initial_frames = 0
-        self.people = {}
+        #self.people = {}
         self.output_dir = ""
         if self.use_detectron2:
             self.detectron2 = Detectron2Keypoints()
@@ -47,6 +48,7 @@ class EstimatingIndividualsPerspective:
         self.gazeToFieldOfVision = GazeToFieldOfVision(self.target)
         self.bboxInFieldOfVision = BboxInFieldOfVision(self.target)
         self.distribution = Distribution()
+        self.identifyPeople = IdentifyPeople()
 
     # Getting the data from webcam or video, initializing the plots and skipping initial frames
     def setup_init_images(self, input_dir, axs):
@@ -105,11 +107,10 @@ class EstimatingIndividualsPerspective:
             return imageShow, {}, {}
 
         # Sort face locations so first person seen is 0, second is 1, always.
-        face_ids = self.identify_faces(face_locations, face_landmarks, image)
-        face_locations = {k: v[1] for k, v in self.people.items() if k in face_ids}
-        eyes = {k: v[2] for k, v in self.people.items() if k in face_ids}
+        face_ids, people = self.identifyPeople.identify_faces(face_locations, face_landmarks, image, self.only_one_person)
+        face_locations = {k: v[1] for k, v in people.items() if k in face_ids}
+        eyes = {k: v[2] for k, v in people.items() if k in face_ids}
         return imageShow, face_locations, eyes
-
 
     def calculate_gaze360_probabilities(self, imageShow, prob_image, gazes, gazes_10, gazes_90, angles_bbox, opposites, face_locations, frame_number):
         probs = {}
@@ -126,7 +127,7 @@ class EstimatingIndividualsPerspective:
                 error_angle = max(angle_gaze_min, angle_gaze_max)
                 self.distribution.vonmises(error_angle)
                 probs[k] = self.distribution.target_probability(angles_bbox[k][0], angles_bbox[k][1], opposites[k])
-                self.distribution.plot(self.output_dir, frame_number)
+                #self.distribution.plot(self.output_dir, frame_number)
 
         elif self.probability_type == 1:
             for k in gazes.keys():
@@ -235,86 +236,6 @@ class EstimatingIndividualsPerspective:
         axs[0] = axs[1]
         axs[1] = temp
         return axs, canvas
-
-    def identify_faces(self,face_locations,face_landmarks, image):
-        # If no other person is expected.
-        if self.only_one_person:
-            self.people["only_one"] = [0,face_locations[0],face_landmarks[0]]
-            return ["only_one"]
-
-        # Sort face locations so first person seen is 0, second is 1, always.
-        identified = self.add_faces(face_locations,face_landmarks, image)
-        for k in self.people.copy():
-            if k not in identified:
-                if len(self.people[k]) < 4:
-                    self.people[k].append(0)
-                elif self.people[k][3] >= 50:
-                    self.people.pop(k, None)
-                else:
-                    self.people[k][3]+=1
-        return identified
-
-    def add_faces(self, faces, eyes, image):
-        identified = {}
-        not_identified = []
-        encodings = face_recognition.face_encodings(np.array(image), known_face_locations=faces)
-
-        # For all faces check both location and recognition fits
-        for i in range(len(encodings)):
-            # Is the face is seen in before
-            keys_people = self.recognition_identified(encodings[i], {k:self.people[k][0] for k in self.people.keys() if k not in identified})
-            # Are any previous faces close?
-            closest_key = self.location_identified(eyes[i], faces[i], {k:self.people[k][2] for k in self.people.keys() if k not in identified})
-
-            # One or multiple matches
-            if closest_key in keys_people:
-                identified[closest_key] = [self.people[closest_key][0], faces[i], eyes[i]]
-            # No face recognition match - check second round
-            else:
-                not_identified.append([encodings[i], faces[i], eyes[i]])
-
-        identified_keys = list(identified.keys())
-        if len(identified_keys) == len(faces):
-            # save results
-            for k,v in identified.items():
-                self.people[k] = v
-            return identified_keys
-
-        # see if other people might match
-        for person in not_identified:
-            # check is a face was close but not a match
-            find_best_location = {k:self.people[k][2] for k in self.people.keys() if k not in identified_keys}
-            key = self.location_identified(person[2], person[1], find_best_location)
-            # None are close so create new
-            if key is None:
-                recognize = self.recognition_identified(encodings[i], {k:self.people[k][0] for k in self.people.keys() if k not in identified_keys})
-                if len(recognize) > 1:
-                    key = recognize[0]
-                else:
-                    key = uuid.uuid4()
-            identified[key] = person
-            identified_keys.append(key)
-
-        for k,v in identified.items():
-            self.people[k] = v
-        return identified_keys
-
-    def recognition_identified(self, encoding, previous_encodings):
-        if len(previous_encodings) == 0:
-            return []
-        keys, values = zip(*previous_encodings.items())
-        result = face_recognition.compare_faces(values, encoding)
-        return np.array(keys)[result]
-
-    def location_identified(self, eye_location, face_bbox, known_previous):
-        min_movement = ((face_bbox[1] - face_bbox[3])+(face_bbox[2] - face_bbox[0]))/3
-        minimum = [None,min_movement]
-        for k,v in known_previous.items():
-            previous = known_previous[k]
-            diff = sum([np.abs(previous[i]-eye_location[i]) for i in range(len(eye_location))])
-            if diff < minimum[1]:
-                minimum = [k, diff]
-        return minimum[0]
 
     def main(self, input_dir, output):
         # Setup plots
@@ -444,10 +365,3 @@ if __name__ == "__main__":
 
         with open(directory_output+'/results_test3.json', 'w') as fp:
             json.dump(probs, fp, indent=4)
-
-    # ../../TrainingSet/TwoPersons.m4v');
-    # ../../TrainingSet/test.mp4');
-    # ../../TrainingSet/frontHeadpose.m4v');
-    # '../Test_data/Test1/240/2021-01-26-111654.mp4'
-    # '../Test_data/Test2/170/2021-01-26-112002.mp4'
-

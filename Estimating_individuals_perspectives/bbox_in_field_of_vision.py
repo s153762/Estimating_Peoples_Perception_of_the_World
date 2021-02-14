@@ -1,6 +1,7 @@
 import numpy as np
 import math
 
+# Calculates the bounding box for the target.
 class BboxInFieldOfVision:
     def __init__(self, target):
         # left, top, right, bottom

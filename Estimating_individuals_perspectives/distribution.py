@@ -6,6 +6,7 @@ from scipy.stats import vonmises
 import matplotlib.pyplot as plt
 import time
 
+# Implements the Von Mises Distribution (method 3 and 3a)
 class Distribution:
     def __init__(self):
         self.distribution_type = "vonmises"
