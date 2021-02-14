@@ -60,7 +60,8 @@ class Distribution:
 
             if self.target is not []:
                 for target in self.target:
-                    ax.axvline(x=target, label='line at x = {}'.format(target))
+                    angle  = target-self.parafoveal if target == min(self.target) else target+self.parafoveal
+                    ax.axvline(x=angle, label='line at x = {}'.format(target))
             plt.xlabel("Angles (Degrees)")
             plt.ylabel("Estimated Probability")
             plt.title("Method 3a Distribution")

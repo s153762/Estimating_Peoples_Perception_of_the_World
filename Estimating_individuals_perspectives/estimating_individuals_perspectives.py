@@ -27,8 +27,8 @@ class EstimatingIndividualsPerspective:
         self.use_detectron2 = True
         self.use_detecting_attention = True
         self.save_fig = False
-        self.save_vid = True
-        self.plot_frames = False
+        self.save_vid = False
+        self.plot_frames = True
         self.threshold = 0.5
         self.probability_within_threshold = {}
         self.save_probs = {}
@@ -127,7 +127,7 @@ class EstimatingIndividualsPerspective:
                 error_angle = max(angle_gaze_min, angle_gaze_max)
                 self.distribution.vonmises(error_angle)
                 probs[k] = self.distribution.target_probability(angles_bbox[k][0], angles_bbox[k][1], opposites[k])
-                #self.distribution.plot(self.output_dir, frame_number)
+                self.distribution.plot(self.output_dir, frame_number)
 
         elif self.probability_type == 3:
             for k in gazes.keys():
