@@ -92,17 +92,6 @@ class Distribution:
             if opposite:
                 ans = 1-ans
             self.distribution_time += time.time() - start_time
-            #print(self.results)
-            #print(ans)
             return ans
 
-
-
-
-#dist = Distribution()
-#dist.vonmises(np.pi/3)
-#dist.target_probability(-np.pi, np.pi)
-#dist.target_probability(-np.pi/2, np.pi/2,True)
-#dist.target_probability(-np.pi/2, np.pi/2)
-#dist.plot()
 

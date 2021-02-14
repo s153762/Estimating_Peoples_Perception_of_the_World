@@ -3,7 +3,7 @@ import json
 from PIL import Image
 import cv2
 import matplotlib
-matplotlib.use('macosx')#.use('Qt5Agg')
+matplotlib.use('macosx') # For displaying the plots outside of PyCharm
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import face_recognition
@@ -11,7 +11,6 @@ import time
 import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import uuid
-
 
 from detecting_attended_targets.detecting_attended_targets import DetectingAttendedTargets
 from gaze360.gaze360 import Gaze360
@@ -33,7 +32,7 @@ class EstimatingIndividualsPerspective:
         self.probability_within_threshold = {}
         self.save_probs = {}
         self.only_one_person = False
-        self.probability_type = 2 # 1: mean of linear distribution, 2: von mises distribution, 3: front facing
+        self.probability_type = 3 # 1: front facing, 2: mean of linear distribution, 3: von mises distribution,
         self.skip_initial_frames = 0
         self.people = {}
         self.output_dir = ""
@@ -115,13 +114,13 @@ class EstimatingIndividualsPerspective:
     def calculate_gaze360_probabilities(self, imageShow, prob_image, gazes, gazes_10, gazes_90, angles_bbox, opposites, face_locations, frame_number):
         probs = {}
         heatmapGaze = imageShow.convert("RGBA")
-        if self.probability_type == 1:
+        if self.probability_type == 2:
             probs = self.gazeToFieldOfVision.get_probabilities(prob_image)
             # showing Probability image
             for image in prob_image:
                 heatmapGaze = Image.alpha_composite(heatmapGaze, prob_image[image].convert("RGBA"))
 
-        elif self.probability_type == 2:
+        elif self.probability_type == 3:
             for k in gazes.keys():
                 angle_gaze_min, angle_gaze_max = GazeToFieldOfVision.get_min_max_angles(gazes[k], gazes_10[k], gazes_90[k])
                 error_angle = max(angle_gaze_min, angle_gaze_max)
@@ -129,7 +128,7 @@ class EstimatingIndividualsPerspective:
                 probs[k] = self.distribution.target_probability(angles_bbox[k][0], angles_bbox[k][1], opposites[k])
                 self.distribution.plot(self.output_dir, frame_number)
 
-        elif self.probability_type == 3:
+        elif self.probability_type == 1:
             for k in gazes.keys():
                 # left, top, right, bottom
                 head = imageShow.crop((face_locations[k][3],face_locations[k][0],face_locations[k][1],face_locations[k][2]))
@@ -189,10 +188,6 @@ class EstimatingIndividualsPerspective:
         for heatmap in heatmaps:
             map = Image.alpha_composite(map, heatmap)
         return heatmaps, map
-        # blended: Image.alpha_composite(image.convert("RGBA"), heatmaps)
-        # blended: Image.blend(image.convert("RGBA"), heatmap, alpha=.5)
-        # heatmaps: Image.alpha_composite(Image.new('RGBA', image.size, (0, 0, 0, 0)), heatmap)
-
 
     def plot_gaze360(self, gaze360, image, face_locations):
         return gaze360.get_gaze_direction(image, face_locations, False)
@@ -231,12 +226,10 @@ class EstimatingIndividualsPerspective:
         if not self.use_detecting_attention:
             titles[0] = "Detectron2"
         fig = plt.figure(figsize=(18, 6))
-        #fig.canvas.manager.window.move(0, 0);
         canvas = FigureCanvasAgg(fig)
         axs = []
         for axis in range(1,number_of_axis+1):
             axs.append(plt.subplot(1, number_of_axis, axis))
-            #axs[axis-1].set_axis_off()
             axs[axis - 1].set_title(titles[axis - 1])
         temp = axs[0]
         axs[0] = axs[1]
